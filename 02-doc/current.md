@@ -23,13 +23,19 @@ for dome_mission-native work going forward.
   Boundary decision recorded (per-goal abort stays in dome_nav watchdog).
 - **T04** — `intent_parser.py` (pure JSON → Intent) + `mission_node` owns
   `/intent`, drives the FSM. Command execution stubbed to logging.
+- **T05** — go-to-target. `label_resolver.py` (pure): `TargetPose` +
+  `SemanticTargetStore.resolve` (nearest match, typed successor to
+  `find_nearest_confirmed`) + `yaw_from_quaternion`. `mission_node` subscribes
+  `SemanticTargetArray` on `/semantic/targets` (schema_version gated),
+  tracks `/amcl_pose`, and on `DRIVE_TO_TARGET` resolves label → drives via Nav2
+  `NavigateToPose`; missing label → `on_done(DRIVE_FAILED)`. `nav_intent_check.py`
+  retargeted to typed msg, moved into `tools/`. Explore command execution still
+  stubbed (T07).
 
-33 tests pass (`/usr/bin/python3 -m pytest test/`).
+45 tests pass (`/usr/bin/python3 -m pytest test/`).
 
 ## Open
 
-- **T05** — go-to-target: subscribe `SemanticTargetArray`, resolve label → pose
-  (typed, incl. yaw), issue `NavigateToPose`. Kills schemaless JSON.
 - **T06** — dome_nav cleanup: remove `/intent` + label logic from dome_nav
   (`explorer_manager_node`, `nav_manager`). Completes the single-`/intent`-handler
   invariant (until then, running both double-handles `/intent`).
