@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+# mission_node.py — ROS node: owns /intent, drives the mission FSM
+# Author: Pito Salas and Claude Code
+# Open Source Under MIT license
+
 """Mission-sequencing node (F35).
 
 Owns `/intent` (TF35 T04): deserializes each payload, maps it to a mission
@@ -41,11 +46,9 @@ class MissionNode(Node):
     def execute(self, command: Command):
         """Run a primitive command. Stub: logs only until the action clients
         land (T05 drive-to-target, T07 explore wiring)."""
-        self.get_logger().info(
-            f"TODO execute {command.type.name}"
-            f"{f' label={command.label}' if command.label else ''}"
-            f"{f' map_name={command.map_name}' if command.map_name else ''}"
-        )
+        payload = command.label or command.map_name
+        detail = f" ({payload})" if payload else ""
+        self.get_logger().info(f"pending execute {command.type.name}{detail}")
 
 
 def main(args=None):

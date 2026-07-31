@@ -22,15 +22,15 @@ def ros():
 
 @pytest.fixture
 def node():
-    n = MissionNode()
-    yield n
-    n.destroy_node()
+    mission = MissionNode()
+    yield mission
+    mission.destroy_node()
 
 
-def _msg(name, slots=None):
-    m = String()
-    m.data = json.dumps({"name": name, "source": "cli", "slots": slots or {}})
-    return m
+def intent_msg(name, slots=None):
+    msg = String()
+    msg.data = json.dumps({"name": name, "source": "cli", "slots": slots or {}})
+    return msg
 
 
 def test_intent_subscription_exists(node):
@@ -39,24 +39,24 @@ def test_intent_subscription_exists(node):
 
 
 def test_exploration_start_drives_fsm(node):
-    node.on_intent(_msg("exploration_start"))
+    node.on_intent(intent_msg("exploration_start"))
     assert node.fsm.state is State.EXPLORING
 
 
 def test_stop_returns_idle(node):
-    node.on_intent(_msg("exploration_start"))
-    node.on_intent(_msg("exploration_stop"))
+    node.on_intent(intent_msg("exploration_start"))
+    node.on_intent(intent_msg("exploration_stop"))
     assert node.fsm.state is State.IDLE
 
 
 def test_navigation_go_drives_to_target(node):
-    node.on_intent(_msg("navigation_go", {"label": "can"}))
+    node.on_intent(intent_msg("navigation_go", {"label": "can"}))
     assert node.fsm.state is State.GOING_TO_TARGET
 
 
 def test_cancel_returns_idle(node):
-    node.on_intent(_msg("navigation_go", {"label": "can"}))
-    node.on_intent(_msg("navigation_cancel"))
+    node.on_intent(intent_msg("navigation_go", {"label": "can"}))
+    node.on_intent(intent_msg("navigation_cancel"))
     assert node.fsm.state is State.IDLE
 
 

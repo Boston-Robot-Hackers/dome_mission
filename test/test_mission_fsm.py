@@ -136,7 +136,8 @@ def test_full_intent_sequence(fsm):
     # explore -> done -> go -> arrive -> explore again
     assert fsm.on_intent(Intent.EXPLORE_START)[0].type is CommandType.START_EXPLORE
     fsm.on_done(Outcome.EXPLORED_DONE)
-    assert fsm.on_intent(Intent.GO_TO_TARGET, label="door")[0].type is CommandType.DRIVE_TO_TARGET
+    go = fsm.on_intent(Intent.GO_TO_TARGET, label="door")
+    assert go[0].type is CommandType.DRIVE_TO_TARGET
     fsm.on_done(Outcome.ARRIVED)
     assert fsm.state is State.IDLE
     assert fsm.on_intent(Intent.EXPLORE_START)[0].type is CommandType.START_EXPLORE

@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+# intent_parser.py — pure /intent JSON -> mission Intent mapping
+# Author: Pito Salas and Claude Code
+# Open Source Under MIT license
+
 """Pure `/intent` JSON -> mission Intent mapping (F35 / TF35 T04).
 
 The `/intent` contract (std_msgs/String carrying a JSON object) is owned by
@@ -27,7 +32,7 @@ class ParsedIntent:
     map_name: str = ""
 
 
-_NAME_TO_INTENT = {
+NAME_TO_INTENT = {
     "exploration_start": Intent.EXPLORE_START,
     "exploration_stop": Intent.EXPLORE_STOP,
     "navigation_go": Intent.GO_TO_TARGET,
@@ -45,7 +50,7 @@ def parse_intent(json_str: str) -> ParsedIntent | None:
     if not isinstance(payload, dict):
         return None
 
-    intent = _NAME_TO_INTENT.get(payload.get("name", ""))
+    intent = NAME_TO_INTENT.get(payload.get("name", ""))
     if intent is None:
         return None
 

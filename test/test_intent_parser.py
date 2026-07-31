@@ -9,35 +9,37 @@ from dome_mission.intent_parser import ParsedIntent, parse_intent
 from dome_mission.mission_fsm import Intent
 
 
-def _payload(name, slots=None, source="cli"):
+def make_payload(name, slots=None, source="cli"):
     return json.dumps({"name": name, "source": source, "slots": slots or {}})
 
 
 def test_exploration_start():
-    p = parse_intent(_payload("exploration_start"))
+    p = parse_intent(make_payload("exploration_start"))
     assert p == ParsedIntent(Intent.EXPLORE_START)
 
 
 def test_exploration_start_with_map_name():
-    p = parse_intent(_payload("exploration_start", {"map_name": "lab"}))
+    p = parse_intent(make_payload("exploration_start", {"map_name": "lab"}))
     assert p == ParsedIntent(Intent.EXPLORE_START, map_name="lab")
 
 
 def test_exploration_stop():
-    assert parse_intent(_payload("exploration_stop")) == ParsedIntent(Intent.EXPLORE_STOP)
+    got = parse_intent(make_payload("exploration_stop"))
+    assert got == ParsedIntent(Intent.EXPLORE_STOP)
 
 
 def test_navigation_go_carries_label():
-    p = parse_intent(_payload("navigation_go", {"label": "can"}))
+    p = parse_intent(make_payload("navigation_go", {"label": "can"}))
     assert p == ParsedIntent(Intent.GO_TO_TARGET, label="can")
 
 
 def test_navigation_cancel():
-    assert parse_intent(_payload("navigation_cancel")) == ParsedIntent(Intent.CANCEL)
+    got = parse_intent(make_payload("navigation_cancel"))
+    assert got == ParsedIntent(Intent.CANCEL)
 
 
 def test_unknown_name_is_none():
-    assert parse_intent(_payload("bogus_verb")) is None
+    assert parse_intent(make_payload("bogus_verb")) is None
 
 
 def test_malformed_json_is_none():
