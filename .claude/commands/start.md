@@ -1,0 +1,9 @@
+To orient for this session do every step listed here:
+
+1. Read and always obey and apply @.claude/style_guide.md and process.md 
+2. Read @02-doc/current.md
+4. List all files in 03-features/notdone/ and read each one
+5. List all files in 04-tasks/notdone/ and read each one
+6. Summarize: open features, next tasks, what was in progress
+
+**Process gate:** After the summary, stop. Do not write any code or content until the user has reviewed the plan and given explicit approval to proceed.
