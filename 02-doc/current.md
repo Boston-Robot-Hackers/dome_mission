@@ -34,12 +34,17 @@ for dome_mission-native work going forward.
 
 45 tests pass (`/usr/bin/python3 -m pytest test/`).
 
+- **T06** (dome_nav cleanup, done 2026-07-31) — dome_nav deleted `nav_manager`
+  + `nav_manager_node` + their tests/literate; go-to-target now lives here.
+  F02/TF02 records relocated into this package. Explorer keeps `/intent` until
+  T07 (the `/intent`→ExploreArea swap), so two `/intent` handlers coexist for now.
+
 ## Open
 
-- **T06** — dome_nav cleanup: remove `/intent` + label logic from dome_nav
-  (`explorer_manager_node`, `nav_manager`). Completes the single-`/intent`-handler
-  invariant (until then, running both double-handles `/intent`).
-- **T07** — top-level launch composing the TF33 sub-stack + dome_mission.
+- **T07** — explore action swap + top-level launch: swap explorer to an
+  `ExploreArea` action server + wire mission_node's client (replacing the
+  START_EXPLORE stub); compose the TF33 sub-stack + dome_mission. This is where
+  explorer loses `/intent` and the single-handler invariant is finally met.
 - **T08** — docs / literate / package-list updates.
 
 ## Architecture essentials
