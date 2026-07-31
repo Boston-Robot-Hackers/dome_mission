@@ -15,8 +15,9 @@ map-frame pose (nearest to the robot) and drives there via Nav2 `NavigateToPose`
 directly — no dome_nav hop. A missing label fails the behavior cleanly
 (on_done(DRIVE_FAILED)) so the FSM returns to IDLE.
 
-Explore primitives (START_EXPLORE / CANCEL_EXPLORE) are still logged only; the
-ExploreArea action client lands in T07.
+Explore (START_EXPLORE / CANCEL_EXPLORE) drives dome_nav's ExploreArea action;
+the terminal outcome feeds back into the FSM (on_done). Go-to-target uses Nav2
+NavigateToPose directly (above).
 """
 
 import math
@@ -29,6 +30,7 @@ from rclpy.action import ActionClient
 from rclpy.node import Node
 from std_msgs.msg import String
 
+from dome_nav_msgs.action import ExploreArea
 from dome_semantic_msgs.msg import SemanticTargetArray
 
 from dome_mission.intent_parser import parse_intent
@@ -42,6 +44,13 @@ from dome_mission.mission_fsm import Command, CommandType, MissionFsm, Outcome
 EXPECTED_SCHEMA_VERSION = 1
 SEMANTIC_TARGETS_TOPIC = "/semantic/targets"
 
+# ExploreArea result outcome (uint8) -> mission Outcome.
+EXPLORE_OUTCOMES = {
+    ExploreArea.Result.EXPLORED_DONE: Outcome.EXPLORED_DONE,
+    ExploreArea.Result.STOPPED: Outcome.STOPPED,
+    ExploreArea.Result.NO_TARGETS_BLOCKED: Outcome.NO_TARGETS_BLOCKED,
+}
+
 
 class MissionNode(Node):
     def __init__(self):
@@ -50,7 +59,9 @@ class MissionNode(Node):
         self.store = SemanticTargetStore()
         self.robot_xy = None
         self.drive_goal_handle = None
+        self.explore_goal_handle = None
         self.nav_client = ActionClient(self, NavigateToPose, "navigate_to_pose")
+        self.explore_client = ActionClient(self, ExploreArea, "explore_area")
         self.intent_sub = self.create_subscription(
             String, "/intent", self.on_intent, 10
         )
@@ -109,13 +120,43 @@ class MissionNode(Node):
         self.robot_xy = (position.x, position.y)
 
     def execute(self, command: Command):
-        if command.type is CommandType.DRIVE_TO_TARGET:
-            self.drive_to_label(command.label)
-        elif command.type is CommandType.CANCEL_DRIVE:
-            self.cancel_drive()
-        else:
-            # START_EXPLORE / CANCEL_EXPLORE: ExploreArea client lands in T07.
-            self.get_logger().info(f"pending execute {command.type.name}")
+        handlers = {
+            CommandType.DRIVE_TO_TARGET: lambda: self.drive_to_label(command.label),
+            CommandType.CANCEL_DRIVE: self.cancel_drive,
+            CommandType.START_EXPLORE: lambda: self.start_explore(command.map_name),
+            CommandType.CANCEL_EXPLORE: self.cancel_explore,
+        }
+        handlers[command.type]()
+
+    def start_explore(self, map_name: str):
+        if not self.explore_client.server_is_ready():
+            self.get_logger().error("ExploreArea server unavailable")
+            self.fsm.on_done(Outcome.STOPPED)
+            return
+        goal = ExploreArea.Goal()
+        goal.map_name = map_name
+        send_future = self.explore_client.send_goal_async(goal)
+        send_future.add_done_callback(self.on_explore_response)
+        self.get_logger().info(f"Exploring (map_name={map_name!r})")
+
+    def on_explore_response(self, future):
+        handle = future.result()
+        if not handle.accepted:
+            self.get_logger().warning("Explore goal rejected")
+            self.fsm.on_done(Outcome.STOPPED)
+            return
+        self.explore_goal_handle = handle
+        handle.get_result_async().add_done_callback(self.on_explore_result)
+
+    def on_explore_result(self, future):
+        self.explore_goal_handle = None
+        outcome = EXPLORE_OUTCOMES.get(future.result().result.outcome, Outcome.STOPPED)
+        self.fsm.on_done(outcome)
+
+    def cancel_explore(self):
+        if self.explore_goal_handle is not None:
+            self.explore_goal_handle.cancel_goal_async()
+            self.explore_goal_handle = None
 
     def drive_to_label(self, label: str):
         target = self.store.resolve(label, self.robot_xy)

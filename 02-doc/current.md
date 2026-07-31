@@ -39,13 +39,18 @@ for dome_mission-native work going forward.
   F02/TF02 records relocated into this package. Explorer keeps `/intent` until
   T07 (the `/intent`→ExploreArea swap), so two `/intent` handlers coexist for now.
 
+- **T07** (explore action swap + top-level launch, done 2026-07-31) — explorer
+  exposes the `ExploreArea` action (dropped `/intent`); `mission_node.start_explore`
+  is its client (result → FSM `on_done`). `launch/mission_explore.launch.py`
+  composes dome_nav's explore stack + mission_node. Single-`/intent`-handler
+  invariant now met. Live smoke confirmed `/explore_area` advertised + no
+  explorer `/intent`. Full sim bring-up pending a sim host (gz can't run on this Pi).
+
 ## Open
 
-- **T07** — explore action swap + top-level launch: swap explorer to an
-  `ExploreArea` action server + wire mission_node's client (replacing the
-  START_EXPLORE stub); compose the TF33 sub-stack + dome_mission. This is where
-  explorer loses `/intent` and the single-handler invariant is finally met.
 - **T08** — docs / literate / package-list updates.
+- **Live sim bring-up** (T07 ROS2-runtime tail): drive a real explore +
+  go-to-label in gz on a sim host.
 
 ## Architecture essentials
 
