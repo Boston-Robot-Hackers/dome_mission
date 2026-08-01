@@ -89,15 +89,95 @@ dome_control      dome_mission (NEW)        dome_nav        dome_semantic
 
 ## How to Demo
 
-**Setup**: dome_mission + dome_nav primitives + dome_semantic running; a saved
-or in-progress semantic map.
+**Setup**
 
-**Steps**:
-1. `nav explore` → dome_mission drives dome_nav exploration, map grows.
-2. `nav go can` → dome_mission resolves `can` → pose from the semantic map,
-   commands dome_nav drive-to-pose; robot arrives.
-3. Confirm dome_nav logs show no `/intent` subscription and no semantic-msg
-   dependency.
+Build and source the workspace:
 
-**Expected output**: mission verbs orchestrated from one place; dome_nav a
-dumb navigation primitive with no mission or semantic knowledge.
+```bash
+colcon build --packages-select dome_nav_msgs dome_semantic_msgs dome_nav dome_mission
+source install/setup.bash
+```
+
+Bring up the whole stack from the mission-layer top-level launch (slam + Nav2 +
+explorer + mission_node) on a sim host with a world loaded:
+
+```bash
+bl dome_mission mission_explore.launch.py --map_name demo --use_sim_time true
+```
+
+Until F33 lands, the semantic map has no live publisher, so the go-to-label
+step (D) uses `tools/nav_intent_check.py` to inject one typed target.
+
+**A. Confirm the layering is wired (no robot motion needed)**
+
+```bash
+ros2 action list | grep explore_area          # dome_nav exposes the primitive
+ros2 node info /mission | grep -A2 Subscribers # mission_node subscribes /intent
+ros2 node info /explore_manager_node | grep -c /intent   # expect 0
+```
+
+Pass: `/explore_area` is advertised as `dome_nav_msgs/action/ExploreArea`, the
+sole `/intent` subscriber is `/mission`, and the explorer has none — the
+single-`/intent`-handler invariant holds and dome_nav carries no
+`dome_semantic_msgs` dependency (`grep -r dome_semantic dome_nav/` is empty).
+
+**B. Explore via the mission verb**
+
+In one terminal watch the feedback and status:
+
+```bash
+ros2 topic echo /explore/status
+```
+
+Start exploration by publishing the intent dome_mission owns:
+
+```bash
+ros2 topic pub --once /intent std_msgs/msg/String \
+  'data: "{\"name\": \"exploration_start\", \"source\": \"cli\", \"slots\": {}}"'
+```
+
+Pass: `mission_node` logs `intent EXPLORE_START -> state EXPLORING` and sends an
+`ExploreArea` goal; the explorer starts picking frontier goals; the map grows;
+`ExploreArea` feedback reports rising `explored_area_m2` and the live
+`current_goal`.
+
+**C. Preempt mid-session**
+
+```bash
+ros2 topic pub --once /intent std_msgs/msg/String \
+  'data: "{\"name\": \"exploration_stop\", \"source\": \"cli\", \"slots\": {}}"'
+```
+
+Pass: the `ExploreArea` goal is canceled (result outcome `STOPPED=1`), the robot
+stops, and the FSM returns to `IDLE`. (Letting exploration run to no-frontiers
+instead yields `EXPLORED_DONE=0`.)
+
+**D. Go to a labelled target**
+
+Inject one confirmed target and command a drive to it:
+
+```bash
+python3 tools/nav_intent_check.py     # publishes a typed SemanticTargetArray + navigation_go
+```
+
+Or by hand: publish a `dome_semantic_msgs/SemanticTargetArray` on
+`/semantic/targets` (a `can` at a known map pose, `schema_version: 1`), then:
+
+```bash
+ros2 topic pub --once /intent std_msgs/msg/String \
+  'data: "{\"name\": \"navigation_go\", \"source\": \"cli\", \"slots\": {\"label\": \"can\"}}"'
+```
+
+Pass: `mission_node` resolves `can` → the recorded pose (nearest to the robot,
+yaw included), sends a Nav2 `NavigateToPose` goal **directly** (no dome_nav hop),
+and the robot drives there and arrives. An unknown label logs a clear warning and
+the FSM settles back at `IDLE` without motion. A stray target with the wrong
+`schema_version` is dropped with a warning.
+
+**Expected output**
+
+All three mission verbs (explore / stop / go-to-label) are orchestrated from one
+place — dome_mission. dome_nav is a dumb navigation primitive with no mission or
+semantic knowledge: it only serves the `ExploreArea` action and Nav2. The
+`/intent` contract has exactly one handler, and go-to-label rides the typed
+`SemanticTargetArray` msg, not the retired schemaless JSON.
