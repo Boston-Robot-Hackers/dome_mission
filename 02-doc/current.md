@@ -46,11 +46,19 @@ for dome_mission-native work going forward.
   invariant now met. Live smoke confirmed `/explore_area` advertised + no
   explorer `/intent`. Full sim bring-up pending a sim host (gz can't run on this Pi).
 
+- **T08** (docs/literate, done 2026-07-31) — dome_nav docs updated (current.md,
+  09-explorer literate v2.0, overview, README/CLAUDE); F35/TF35 records relocated
+  here as this package's founding record. TF35 T01–T08 all done.
+
 ## Open
 
-- **T08** — docs / literate / package-list updates.
 - **Live sim bring-up** (T07 ROS2-runtime tail): drive a real explore +
-  go-to-label in gz on a sim host.
+  go-to-label in gz on a sim host. Only remaining TF35 item.
+- **dome_mission literate**: `mission_fsm` / `intent_parser` / `label_resolver` /
+  `mission_node` have no `01-literate/` yet — a native dome_mission task.
+- **Upstream blocker for live go-to-label**: F33/TF33 (dome_semantic pkg +
+  dome_vision publisher of `/semantic/targets`) is uncoded; until then the
+  semantic map is contract-only.
 
 ## Architecture essentials
 
