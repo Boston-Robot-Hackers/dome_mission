@@ -1,0 +1,8 @@
+line-length = 88
+
+[lint]
+# EXE001 (shebang present but file not executable): style_guide.md mandates a
+# `#!/usr/bin/env python3` header on every .py file regardless of whether it's
+# meant to be run directly — these are ROS-installed modules invoked via
+# entry_points/ros2 run, not standalone scripts.
+ignore = ["EXE001"]

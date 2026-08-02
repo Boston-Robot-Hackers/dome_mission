@@ -91,6 +91,15 @@ dome_control      dome_mission (NEW)        dome_nav        dome_semantic
 
 **Setup**
 
+`dome_nav`'s `main` branch predates this feature — the `ExploreArea` action
+server (T07) only exists on `origin/semantic-exploration`, not yet merged.
+Check that branch out before building, or the explorer silently falls back to
+its pre-T07 `/intent` handler with no action server:
+
+```bash
+cd <ws>/src/dome_nav && git checkout semantic-exploration  # or -b + origin/... if not local yet
+```
+
 Build and source the workspace:
 
 ```bash
@@ -102,8 +111,13 @@ Bring up the whole stack from the mission-layer top-level launch (slam + Nav2 +
 explorer + mission_node) on a sim host with a world loaded:
 
 ```bash
-bl dome_mission mission_explore.launch.py --map_name demo --use_sim_time true
+bl dome_mission mission_explore.launch.py --map_name demo --world_name simple_room --sim_mode true
 ```
+
+`--sim_mode` (not `--use_sim_time` — that name collides with a better_launch
+framework-reserved global option and is silently dropped, see TF35 T07) picks
+dome_nav's Gazebo sim stack over the real-robot one; `--world_name` is
+required in sim mode (`simple_room` or `multi_room`, from `dome_nav/worlds/`).
 
 Until F33 lands, the semantic map has no live publisher, so the go-to-label
 step (D) uses `tools/nav_intent_check.py` to inject one typed target.

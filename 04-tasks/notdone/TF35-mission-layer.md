@@ -250,7 +250,96 @@ breaks mid-sequence. Consequence: explorer_manager_node **still subscribes
 robot), unrelated to this change.
 
 ## T07 — Explore action swap + top-level launch (composes TF33 T08 sub-stack)
-**Status**: done (2026-07-31) — code + unit + node-introspection smoke; full sim bring-up pending a sim host
+**Status**: done (2026-08-01) — live sim bring-up verified end-to-end (explore
+only; go-to-label blocked on F33, see below)
+
+**Reopened (2026-08-01) — sim bring-up findings**: running
+`bl dome_mission mission_explore.launch.py --map_name demo --use_sim_time true`
+on an actual sim host fails before any node reaches full activation:
+- **Wrong stack composed.** `mission_explore.launch.py` unconditionally
+  `bl.include`s dome_nav's `robot_explore.launch.py` — the **real-robot**
+  stack (no Gazebo spawn, real-robot Nav2 params, real-robot explorer tuning).
+  `--use_sim_time true` only flips a parameter; it does not select dome_nav's
+  actual sim stack (`sim_robot.launch.py` + `sim_slam.launch.py` +
+  `sim_nav2.launch.py` + `sim_explore_node.launch.py`, already composed
+  together as dome_nav's `sim_nav_full.launch.py`). Confirmed live: no `gz`
+  process, no `gz` topics, no robot — `mission_explore.launch.py` has no sim
+  path at all.
+- **Kilted param incompatibility not ported.** `robot_explore.launch.py`
+  loads `nav2_params_explore_real.yaml`, which still has the old
+  `error_code_names` key; Kilted rejects it as fatal
+  (`bt_navigator` dies, exit -11). dome_nav already fixed the equivalent sim
+  file (`nav2_params_explore_sim.yaml`, replaced with
+  `error_code_name_prefixes` + `enable_stamped_cmd_vel: false`, see
+  `dome_nav/04-tasks/chores.md`), but the real-robot file was never patched.
+
+**Fix applied (2026-08-01)**:
+- `nav2_params_explore_real.yaml` — ported the Kilted fix already applied to
+  the sim yaml: `error_code_names` → `error_code_name_prefixes`, plus
+  `enable_stamped_cmd_vel: false` under `controller_server`,
+  `velocity_smoother`, `collision_monitor`.
+- `mission_explore.launch.py` — added a `use_sim_time`-gated branch: sim
+  (`bl.include("dome_nav", "sim_nav_full.launch.py", ...)`, threading through
+  `world_name`/`urdf_name`) vs real (`robot_explore.launch.py`, unchanged).
+- **Second bug found live**: the branch initially still always took the
+  real-robot path even after retyping to `bool`. Root cause, isolated with a
+  throwaway probe launch file — better_launch reserves `--use-sim-time`
+  (hyphenated) as a **framework-global** option ("Changes the default
+  use_sim_time setting of the root group"; see
+  `better_launch/utils/click.py::get_click_bl_options`). click normalizes both
+  `--use-sim-time` and a same-named `--use_sim_time` function parameter to the
+  identical Python destination `use_sim_time`, and the reserved,
+  unset-by-default global silently wins, stomping any CLI value for a
+  same-named launch parameter — confirmed `--use_sim_time true` always
+  arrived as `False`, both as `str` and as `bool`. (This means
+  `dome_nav/launch/just_explorer.launch.py`'s documented
+  `--use_sim_time true` recipe in `simhowto.md` was likely never actually
+  landing either — untested by this task, flagged for dome_nav.)
+  **Fix**: renamed the parameter to `sim_mode` (pure branching flag, not a
+  ROS `use_sim_time` value — the included launch files already set their own
+  nodes' `use_sim_time` internally). Verified directly: `--sim_mode true`
+  now correctly selects `sim_nav_full.launch.py` (confirmed via its own
+  `world_name` validation error when omitted, rather than silently falling
+  through to the real-robot branch). Build clean, 45 dome_mission tests still
+  pass. Live re-verification of the full sim stack (Gazebo window opens, TF
+  comes up, explore/go-to-label work end-to-end) still pending user
+  confirmation — **new invocation is
+  `--sim_mode true` instead of `--use_sim_time true`**.
+
+**Live re-verification (2026-08-01)**: full stack launched on the sim host
+with `--sim_mode true --world_name simple_room`; Gazebo, slam, Nav2, and
+`mission_node` all came up. Found one more gap, this time in `dome_nav`, not
+`dome_mission`:
+- **`dome_nav`'s checked-out `main` predates this entire feature.** `main` was
+  at `effa9ac` (before F35/TF35 started); the T02–T08 work — including T07's
+  `ExploreArea` action server — only exists on `origin/semantic-exploration`
+  (never merged to `main`). Running against `main` silently reproduces the
+  pre-T07 architecture: `explorer_manager_node` still subscribes `/intent`
+  directly and has no action server, so `mission_node`'s `ExploreArea` goal
+  has nowhere to go (`ros2 action info /explore_area` showed 1 client, 0
+  servers) while the stale `explorer_manager` answers `/intent` itself —
+  two handlers silently coexisting, the exact invariant T07 was meant to
+  close. **Not a dome_mission bug**; flagged for dome_nav to merge
+  `semantic-exploration` → `main` separately. Worked around for this
+  verification by building `dome_nav` from `origin/semantic-exploration`
+  (local branch `semantic-exploration`, not merged into its `main`).
+- With that branch built: confirmed `/explore_area` has exactly 1 client
+  (`/mission`) and 1 server (`/explore_manager`), no `/intent` subscribers
+  left anywhere. Published `exploration_start` on `/intent`; `mission_node`
+  drove the `ExploreArea` goal end-to-end — `/explore/status` progressed
+  `EXPL` → `DONE`, `reached: 2, failed: 0`.
+- **Go-to-label not exercised**: `/semantic/targets` has 0 publishers (no
+  `dome_semantic` package in the workspace yet) — confirmed still blocked on
+  F33/TF33, not a regression.
+- Also found and fixed non-blocking noise while debugging this: slam_toolbox's
+  legacy `.pgm`/`.yaml` map export (`dome_nav/slam_manager_node.py:161-176`)
+  intermittently fails with "Failed to spin map subscription" /
+  `result=255`; the pose graph (the actual persisted SLAM state) saves fine
+  regardless, and nothing downstream depends on the legacy export — logged as
+  a `WARNING`, not fatal. No fix applied (out of scope for dome_mission); flag
+  for dome_nav if the `.pgm`/`.yaml` artifact itself is ever needed.
+
+**Status (pre-2026-08-01)**: done (2026-07-31) — code + unit + node-introspection smoke; full sim bring-up pending a sim host
 
 **Description**: **Owns the top-level launch (settled 2026-07-31).** Composes
 via `bl.include`: pulls in the TF33 T08 sub-stack (OAK-D + slam + Nav2 +
@@ -290,13 +379,14 @@ sim bring-up verifying it end-to-end. Adds the `dome_nav_msgs` dep to dome_nav.
 (outcome mapping, feedback build, known-area, session transitions, action
 accept/reject). Live smoke: booted `explorer_manager_node`, confirmed
 `/explore_area` advertised (`dome_nav_msgs/action/ExploreArea`) and **no
-`/intent` subscription**. **Not yet done**: full sim bring-up (drive a real
-explore + go-to-label in gz) — needs a sim host; this Pi can't run gz+Nav2. Left
-as the ROS2-runtime verification below.
+`/intent` subscription**. Full sim bring-up (drive a real explore in gz) done
+2026-08-01 — see live re-verification above. Go-to-label leg still blocked on
+F33/TF33 (no `dome_semantic` publisher), not a T07 gap.
 
-**Test**: sim bring-up: `nav explore` via dome_mission drives exploration;
-`nav go <label>` drives to a recorded target; assert exactly one `/intent`
-subscriber. Marked ROS2-runtime.
+**Test**: sim bring-up: `nav explore` via dome_mission drives exploration —
+done 2026-08-01, `reached: 2, failed: 0`. `nav go <label>` drives to a
+recorded target — blocked on F33. Assert exactly one `/intent` subscriber —
+confirmed live. Marked ROS2-runtime.
 
 ## T08 — Docs, literate, current.md
 **Status**: done (2026-07-31)
