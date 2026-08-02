@@ -73,6 +73,7 @@ class MissionNode(Node):
         )
         self.get_logger().info("dome_mission mission_node up; owns /intent")
 
+    # Called on each /intent message (intent_sub).
     def on_intent(self, msg: String):
         parsed = parse_intent(msg.data)
         if parsed is None:
@@ -87,6 +88,7 @@ class MissionNode(Node):
         for command in commands:
             self.execute(command)
 
+    # Called on each /semantic/targets message (targets_sub).
     def on_semantic_targets(self, msg: SemanticTargetArray):
         """Ingest the typed semantic map: gate schema_version, convert each Pose
         to a pure TargetPose (yaw from the planar quaternion), refresh the store."""
@@ -115,6 +117,7 @@ class MissionNode(Node):
             )
         self.store.update(kept)
 
+    # Called on each /amcl_pose message (amcl_sub).
     def on_amcl_pose(self, msg: PoseWithCovarianceStamped):
         position = msg.pose.pose.position
         self.robot_xy = (position.x, position.y)
@@ -139,6 +142,7 @@ class MissionNode(Node):
         send_future.add_done_callback(self.on_explore_response)
         self.get_logger().info(f"Exploring (map_name={map_name!r})")
 
+    # Called by rclpy as the done-callback on start_explore's send_goal_async future.
     def on_explore_response(self, future):
         handle = future.result()
         if not handle.accepted:
@@ -148,6 +152,7 @@ class MissionNode(Node):
         self.explore_goal_handle = handle
         handle.get_result_async().add_done_callback(self.on_explore_result)
 
+    # Called by rclpy as the done-callback on the accepted goal's get_result_async future.
     def on_explore_result(self, future):
         self.explore_goal_handle = None
         outcome = EXPLORE_OUTCOMES.get(future.result().result.outcome, Outcome.STOPPED)
@@ -184,6 +189,7 @@ class MissionNode(Node):
         pose.pose.orientation.w = math.cos(target.yaw_rad / 2.0)
         return pose
 
+    # Called by rclpy as the done-callback on drive_to_label's send_goal_async future.
     def on_goal_response(self, future):
         handle = future.result()
         if not handle.accepted:
@@ -193,6 +199,7 @@ class MissionNode(Node):
         self.drive_goal_handle = handle
         handle.get_result_async().add_done_callback(self.on_drive_result)
 
+    # Called by rclpy as the done-callback on the accepted goal's get_result_async future.
     def on_drive_result(self, future):
         self.drive_goal_handle = None
         status = future.result().status
