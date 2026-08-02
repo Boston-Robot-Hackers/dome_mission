@@ -1,7 +1,9 @@
 # TF35 — dome_mission Mission-Sequencing Layer for F35
 
-> Relocated from dome_nav → dome_mission (2026-07-31, T08). T01–T08 all done;
-> only the live sim bring-up (T07 ROS2-runtime tail) remains — needs a sim host.
+> Relocated from dome_nav → dome_mission (2026-07-31, T08). T01–T08 all done,
+> including T07's live sim bring-up (verified 2026-08-01 on a sim host: explore
+> ran end-to-end, `reached: 2, failed: 0`). Go-to-label live verification stays
+> blocked on F33/TF33 (`dome_semantic` uncoded) — upstream, not a T07 gap.
 
 Extract mission sequencing out of dome_nav into a new neutral `dome_mission`
 package, in step with F33 Phase A. Settled (F35): extract in Phase A;

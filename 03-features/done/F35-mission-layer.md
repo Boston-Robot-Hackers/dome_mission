@@ -1,14 +1,17 @@
 # F35 — dome_mission: Mission-Sequencing Layer
 
 > Relocated from dome_nav → dome_mission (2026-07-31, TF35 T08) as this package's
-> founding record — the extraction (T01–T08) is complete. Still in `notdone`:
-> the live sim bring-up (T07 ROS2-runtime tail) needs a sim host.
+> founding record — the extraction (T01–T08) is complete, including the T07
+> live sim bring-up (verified 2026-08-01: explore ran end-to-end via
+> `mission_node`, `reached: 2, failed: 0`). Go-to-label remains
+> live-unverified only because it's blocked upstream on F33/TF33
+> (`dome_semantic` uncoded), not a gap in this feature.
 
 **Priority**: High
-**Done:** no
+**Done:** yes
 **Tasks File Created:** yes (TF35)
-**Tests Written:** no
-**Test Passing:** no
+**Tests Written:** yes
+**Test Passing:** yes
 **Description**: Extract high-level mission sequencing out of dome_nav into a
 new neutral package `dome_mission`. dome_nav becomes navigation **primitives
 only** (SLAM, plan, drive-to-pose, frontier-explore); dome_mission owns the

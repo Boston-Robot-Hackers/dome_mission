@@ -62,13 +62,28 @@ for dome_mission-native work going forward.
   09-explorer literate v2.0, overview, README/CLAUDE); F35/TF35 records relocated
   here as this package's founding record. TF35 T01–T08 all done.
 
+- **dome_mission `01-literate/`** (done 2026-08-02) — full literate doc set:
+  `00-overview` + chapters for `mission_fsm` / `intent_parser` /
+  `label_resolver` / `mission_node` / `mission_explore.launch.py`, plus
+  `X01-nav_intent_check` appendix.
+
 ## Open
 
+- **I01** (`05-issues/open/`): `explorer_manager_node` crashed live on
+  frontier exhaustion (`NO_TARGETS_BLOCKED` path) — `rclpy.ok()` turned
+  `False` mid-goal for unknown reasons, not user-triggered. `dome_nav`'s to
+  fix.
+- **I02** (`05-issues/open/`): the explore/sim launch stack has no `amcl` —
+  `mission_node`'s `/amcl_pose` subscription has zero publishers there, so
+  go-to-label has no live pose even once F33 lands. Needs a localization-mode
+  handoff after explore that doesn't exist yet.
+- **I03** (`05-issues/open/`): `intent_parser.py`'s four-guard LBYL
+  validation could collapse to a single EAFP `try`/`except`, but two open
+  sub-questions (broad-except masking risk; where a more specific failure
+  reason should be logged) are undecided — no code touched yet.
 - **dome_nav branch merge**: `origin/semantic-exploration` (has T02–T08,
   including T07's `ExploreArea` server) is still unmerged into `dome_nav`'s
   `main`. Not dome_mission's to fix, but blocks anyone building from `main`.
-- **dome_mission literate**: `mission_fsm` / `intent_parser` / `label_resolver` /
-  `mission_node` have no `01-literate/` yet — a native dome_mission task.
 - **Upstream blocker for live go-to-label**: F33/TF33 (dome_semantic pkg +
   dome_vision publisher of `/semantic/targets`) is uncoded; `/semantic/targets`
   has 0 publishers. Explore leg is verified; go-to-label leg is not (blocked,
