@@ -39,25 +39,38 @@ def mission_explore_launch(
         )
 
     sim_mode = {
-        "true": True, "t": True, "1": True, "yes": True,
-        "false": False, "f": False, "0": False, "no": False,
+        "true": True,
+        "t": True,
+        "1": True,
+        "yes": True,
+        "false": False,
+        "f": False,
+        "0": False,
+        "no": False,
     }[sim_mode.strip().lower()]
 
     bl = BetterLaunch()
     if sim_mode:
         bl.include(
-            "dome_nav", "sim_nav_full.launch.py",
-            map_name=map_name, world_name=world_name, urdf_name=urdf_name,
+            "dome_nav",
+            "sim_nav_full.launch.py",
+            map_name=map_name,
+            world_name=world_name,
+            urdf_name=urdf_name,
         )
     else:
         bl.include(
-            "dome_nav", "robot_explore.launch.py",
-            map_name=map_name, use_sim_time=str(sim_mode).lower(),
+            "dome_nav",
+            "robot_explore.launch.py",
+            map_name=map_name,
+            use_sim_time=str(sim_mode).lower(),
         )
 
     bl.node(
-        "dome_mission", "mission_node",
-        name="mission", ros_waittime=30.0,
+        "dome_mission",
+        "mission_node",
+        name="mission",
+        ros_waittime=30.0,
     )
 ```
 
@@ -147,8 +160,14 @@ picking a name the framework has no opinion about.
 
 ```python
 sim_mode = {
-    "true": True, "t": True, "1": True, "yes": True,
-    "false": False, "f": False, "0": False, "no": False,
+    "true": True,
+    "t": True,
+    "1": True,
+    "yes": True,
+    "false": False,
+    "f": False,
+    "0": False,
+    "no": False,
 }[sim_mode.strip().lower()]
 ```
 

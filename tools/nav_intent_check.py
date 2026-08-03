@@ -26,12 +26,11 @@ import time
 
 import rclpy
 from builtin_interfaces.msg import Time
+from dome_semantic_msgs.msg import SemanticTarget, SemanticTargetArray
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
 from std_msgs.msg import String
-
-from dome_semantic_msgs.msg import SemanticTarget, SemanticTargetArray
 
 LABEL = "chair"
 GOAL_DIST_M = 0.50
@@ -152,12 +151,13 @@ def main():
         sys.exit(1)
     pose = node.current_pose
     yaw = node.current_yaw()
-    print(f"  pose: x={pose.position.x:.3f} y={pose.position.y:.3f} "
-          f"yaw={math.degrees(yaw):.1f} deg")
+    print(
+        f"  pose: x={pose.position.x:.3f} y={pose.position.y:.3f} "
+        f"yaw={math.degrees(yaw):.1f} deg"
+    )
 
     target_x, target_y, target_yaw = node.compute_target()
-    print(f"\n[2/3] Publishing SemanticTargetArray target: "
-          f"({target_x}, {target_y})")
+    print(f"\n[2/3] Publishing SemanticTargetArray target: ({target_x}, {target_y})")
     node.send_target(target_x, target_y, target_yaw)
     print(f"  target subscribers: {node.targets_pub.get_subscription_count()}")
 
@@ -165,8 +165,10 @@ def main():
     print(f"  intent subscribers: {node.intent_pub.get_subscription_count()}")
     node.send_intent()
 
-    print("\nDONE: intent sent. Watch the robot / RViz / mission_node log for "
-          "arrival (no status topic yet — F08).")
+    print(
+        "\nDONE: intent sent. Watch the robot / RViz / mission_node log for "
+        "arrival (no status topic yet — F08)."
+    )
     node.destroy_node()
     rclpy.shutdown()
 

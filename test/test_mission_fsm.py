@@ -22,6 +22,7 @@ def fsm():
 
 # --- explore behavior ---------------------------------------------------------
 
+
 def test_explore_start_from_idle(fsm):
     cmds = fsm.on_intent(Intent.EXPLORE_START, map_name="lab")
     assert fsm.state is State.EXPLORING
@@ -57,6 +58,7 @@ def test_explore_start_ignored_when_busy(fsm):
 
 # --- locate behavior (F33 Phase C) -------------------------------------------
 
+
 def test_locate_start_drives_explore_primitive(fsm):
     cmds = fsm.on_intent(Intent.LOCATE_START, map_name="lab")
     assert fsm.state is State.LOCATING
@@ -77,6 +79,7 @@ def test_locate_cancel_emits_cancel_explore(fsm):
 
 
 # --- go-to-target behavior ---------------------------------------------------
+
 
 def test_go_to_target_from_idle(fsm):
     cmds = fsm.on_intent(Intent.GO_TO_TARGET, label="can")
@@ -112,6 +115,7 @@ def test_go_ignored_when_exploring(fsm):
 
 
 # --- defensive: stray events are no-ops --------------------------------------
+
 
 def test_stop_when_idle_is_noop(fsm):
     cmds = fsm.on_intent(Intent.EXPLORE_STOP)

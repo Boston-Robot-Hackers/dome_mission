@@ -41,6 +41,7 @@ class State(Enum):
     LOCATING = auto()
     GOING_TO_TARGET = auto()
 
+
 class Intent(Enum):
     EXPLORE_START = auto()
     EXPLORE_STOP = auto()
@@ -48,12 +49,14 @@ class Intent(Enum):
     GO_TO_TARGET = auto()
     CANCEL = auto()
 
+
 class Outcome(Enum):
     EXPLORED_DONE = auto()
     STOPPED = auto()
     NO_TARGETS_BLOCKED = auto()
     ARRIVED = auto()
     DRIVE_FAILED = auto()
+
 
 class CommandType(Enum):
     START_EXPLORE = auto()

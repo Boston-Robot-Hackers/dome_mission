@@ -24,14 +24,13 @@ import math
 
 import rclpy
 from action_msgs.msg import GoalStatus
+from dome_nav_msgs.action import ExploreArea
+from dome_semantic_msgs.msg import SemanticTargetArray
 from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
 from nav2_msgs.action import NavigateToPose
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from std_msgs.msg import String
-
-from dome_nav_msgs.action import ExploreArea
-from dome_semantic_msgs.msg import SemanticTargetArray
 
 from dome_mission.intent_parser import parse_intent
 from dome_mission.label_resolver import (

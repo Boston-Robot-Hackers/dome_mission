@@ -37,9 +37,7 @@ def __init__(self):
     self.explore_goal_handle = None
     self.nav_client = ActionClient(self, NavigateToPose, "navigate_to_pose")
     self.explore_client = ActionClient(self, ExploreArea, "explore_area")
-    self.intent_sub = self.create_subscription(
-        String, "/intent", self.on_intent, 10
-    )
+    self.intent_sub = self.create_subscription(String, "/intent", self.on_intent, 10)
     self.targets_sub = self.create_subscription(
         SemanticTargetArray, SEMANTIC_TARGETS_TOPIC, self.on_semantic_targets, 10
     )
@@ -250,6 +248,7 @@ def start_explore(self, map_name: str):
     send_future.add_done_callback(self.on_explore_response)
     self.get_logger().info(f"Exploring (map_name={map_name!r})")
 
+
 def on_explore_response(self, future):
     handle = future.result()
     if not handle.accepted:
@@ -259,10 +258,12 @@ def on_explore_response(self, future):
     self.explore_goal_handle = handle
     handle.get_result_async().add_done_callback(self.on_explore_result)
 
+
 def on_explore_result(self, future):
     self.explore_goal_handle = None
     outcome = EXPLORE_OUTCOMES.get(future.result().result.outcome, Outcome.STOPPED)
     self.fsm.on_done(outcome)
+
 
 def cancel_explore(self):
     if self.explore_goal_handle is not None:
@@ -398,6 +399,7 @@ def on_goal_response(self, future):
     self.drive_goal_handle = handle
     handle.get_result_async().add_done_callback(self.on_drive_result)
 
+
 def on_drive_result(self, future):
     self.drive_goal_handle = None
     status = future.result().status
@@ -405,6 +407,7 @@ def on_drive_result(self, future):
         self.fsm.on_done(Outcome.ARRIVED)
     else:
         self.fsm.on_done(Outcome.DRIVE_FAILED)
+
 
 def cancel_drive(self):
     if self.drive_goal_handle is not None:

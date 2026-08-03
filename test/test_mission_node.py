@@ -8,9 +8,8 @@ import math
 
 import pytest
 import rclpy
-from std_msgs.msg import String
-
 from dome_semantic_msgs.msg import SemanticTarget, SemanticTargetArray
+from std_msgs.msg import String
 
 from dome_mission.label_resolver import TargetPose
 from dome_mission.mission_fsm import State
@@ -72,6 +71,7 @@ def test_malformed_intent_is_ignored(node):
 
 # --- T05 go-to-target: semantic ingest + resolution ---
 
+
 def semantic_target(label, x, y, yaw=0.0, schema_version=1, target_id="t"):
     target = SemanticTarget()
     target.schema_version = schema_version
@@ -91,18 +91,26 @@ def target_array(targets):
 
 
 def test_ingest_populates_store(node):
-    node.on_semantic_targets(target_array([
-        semantic_target("can", 1.0, 2.0, target_id="a"),
-        semantic_target("cup", 3.0, 4.0, target_id="b"),
-    ]))
+    node.on_semantic_targets(
+        target_array(
+            [
+                semantic_target("can", 1.0, 2.0, target_id="a"),
+                semantic_target("cup", 3.0, 4.0, target_id="b"),
+            ]
+        )
+    )
     assert len(node.store.targets) == 2
     assert node.store.resolve("can", None).target_id == "a"
 
 
 def test_ingest_converts_pose_and_yaw(node):
-    node.on_semantic_targets(target_array([
-        semantic_target("can", 1.5, -2.5, yaw=math.pi / 2),
-    ]))
+    node.on_semantic_targets(
+        target_array(
+            [
+                semantic_target("can", 1.5, -2.5, yaw=math.pi / 2),
+            ]
+        )
+    )
     resolved = node.store.resolve("can", None)
     assert resolved.x_m == pytest.approx(1.5)
     assert resolved.y_m == pytest.approx(-2.5)
@@ -110,9 +118,13 @@ def test_ingest_converts_pose_and_yaw(node):
 
 
 def test_ingest_drops_wrong_schema_version(node):
-    node.on_semantic_targets(target_array([
-        semantic_target("can", 1.0, 2.0, schema_version=99),
-    ]))
+    node.on_semantic_targets(
+        target_array(
+            [
+                semantic_target("can", 1.0, 2.0, schema_version=99),
+            ]
+        )
+    )
     assert node.store.targets == []
 
 

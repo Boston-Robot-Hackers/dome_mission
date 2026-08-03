@@ -3,7 +3,7 @@
 Concise cold-start orientation. Detailed history lives in git log and the
 `04-tasks/` files — do **not** re-narrate it here.
 
-**Date:** 2026-08-01 · **Origin:** extracted from dome_nav per F35 / TF35
+**Date:** 2026-08-02 · **Origin:** extracted from dome_nav per F35 / TF35
 
 ## Status
 
@@ -67,12 +67,32 @@ for dome_mission-native work going forward.
   `label_resolver` / `mission_node` / `mission_explore.launch.py`, plus
   `X01-nav_intent_check` appendix.
 
+- **dome_nav branch merge** (done 2026-08-02) — `origin/semantic-exploration`
+  fast-forward-merged into `dome_nav`'s `main` at `894c799`; anyone building
+  from `main` now gets T02–T08. Same commit also carries the **I01 fix**:
+  `explorer_manager_node`'s racy on-demand `fetch_grid` (dynamic
+  create/destroy of grid subscriptions, colliding with the executor's own
+  wait-set rebuild) replaced by standing `start_grids`/`stop_grids`
+  subscriptions, lifecycle-matched to the TF listener. Not live-verified —
+  the regression test written for it never reproduced the race either
+  before or after the fix — but the racy mechanism itself is gone.
+
+- **F33/TF33 underway in a new sibling package, `dome_semantic`**
+  (bootstrapped 2026-08-02, `Boston-Robot-Hackers/dome_semantic`). **T01**
+  (`dome_semantic_msgs`) was already done. **T02**: `world_tracker.py` + its
+  pure dependency closure ported from `dome_vision`, behavior-preserving
+  (`dome_vision`'s originals untouched — its `semantic_map_node.py` is still
+  the live tracker). **T03**: `map`-frame TF transform + re-basing on
+  `map→odom` jumps — new logic, not a port; `dome_vision` only ever
+  transformed to `odom` and had no re-basing at all. 110 tests pass. **T04**
+  (typed `/semantic/targets` publishing) is next — that's what unblocks
+  go-to-label live-verify below. See `dome_semantic/02-doc/current.md` and
+  its "Watch list" note in `notes.md` (four not-done `dome_vision` features
+  target the same ported code and stay `dome_vision`'s concern until its
+  originals are deleted).
+
 ## Open
 
-- **I01** (`05-issues/open/`): `explorer_manager_node` crashed live on
-  frontier exhaustion (`NO_TARGETS_BLOCKED` path) — `rclpy.ok()` turned
-  `False` mid-goal for unknown reasons, not user-triggered. `dome_nav`'s to
-  fix.
 - **I02** (`05-issues/open/`): the explore/sim launch stack has no `amcl` —
   `mission_node`'s `/amcl_pose` subscription has zero publishers there, so
   go-to-label has no live pose even once F33 lands. Needs a localization-mode
@@ -81,13 +101,10 @@ for dome_mission-native work going forward.
   validation could collapse to a single EAFP `try`/`except`, but two open
   sub-questions (broad-except masking risk; where a more specific failure
   reason should be logged) are undecided — no code touched yet.
-- **dome_nav branch merge**: `origin/semantic-exploration` (has T02–T08,
-  including T07's `ExploreArea` server) is still unmerged into `dome_nav`'s
-  `main`. Not dome_mission's to fix, but blocks anyone building from `main`.
-- **Upstream blocker for live go-to-label**: F33/TF33 (dome_semantic pkg +
-  dome_vision publisher of `/semantic/targets`) is uncoded; `/semantic/targets`
-  has 0 publishers. Explore leg is verified; go-to-label leg is not (blocked,
-  not broken).
+- **Upstream blocker for live go-to-label**: `/semantic/targets` still has 0
+  publishers — `dome_semantic` T04 (publishing) isn't built yet. Explore leg
+  is verified; go-to-label leg is not (blocked, not broken). Closer than
+  before: T01–T03 of the producer side are now done.
 - **Non-blocking noise**: slam_toolbox's legacy `.pgm`/`.yaml` map export
   intermittently fails (`dome_nav/slam_manager_node.py:161-176`, "Failed to
   spin map subscription" → `result=255` `WARNING`). Pose graph save (the real
