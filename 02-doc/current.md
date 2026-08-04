@@ -110,6 +110,19 @@ for dome_mission-native work going forward.
   spin map subscription" → `result=255` `WARNING`). Pose graph save (the real
   persisted SLAM state) is unaffected. Not fixed; dome_nav's to pick up if the
   legacy artifact is ever needed.
+- **`dome_control` coordination gap (found 2026-08-04)**: `dome_control`'s
+  `behavior_manager` also subscribes to `/intent` (its own `stop` /
+  `drive_square` / `turn_*` / `get_status` / `describe_scene` /
+  `count_objects`) and its `stop` intent only halts cmd_vel — it does not
+  cancel an outstanding `dome_mission` goal (`EXPLORING` /
+  `GOING_TO_TARGET`). No live double-dispatch today (the two packages'
+  intent-name sets are currently disjoint), but "stop" during a mission
+  leaves the FSM's goal active underneath halted motors. Tracked as F19 in
+  `dome_control` (`dome_control/03-features/notdone/
+  F19-dome-mission-intent-integration.md`) — the design decision there
+  (does `dome_control` publish a cancel, or does `dome_mission` itself treat
+  `"stop"` as CANCEL) affects this package too, since it may add `"stop"` to
+  `intent_parser.py`'s `NAME_TO_INTENT`.
 
 ## Architecture essentials
 
