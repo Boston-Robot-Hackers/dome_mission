@@ -27,8 +27,14 @@
 * Blank line between paragraphs, always. Short paragraphs; bullets for anything enumerable; **bold** for key decisions; *italics* for emphasis or naming a pattern. Several short, headed subsections beat one block.
 * Applies every time a file is rewritten, not just on first authoring.
 
+# agent model selection
+* Default subagent dispatch to haiku; upgrade only when the task needs judgment, not just data-gathering.
+* **haiku** — file/log discovery, "where is X defined", dependency-closure scans, counting, formatting. Use the `Explore` agent type for this.
+* **sonnet** — analysis, code review, writing, moderate reasoning, synthesis across subagent findings.
+* **opus** — architecture decisions, novel debugging, cross-cutting design tradeoffs.
+
 # bootstrap
-* `.claude/bootstrap.md` is the scaffold spec — follow it when bootstrapping a new project.
+* `.claude/bootstrap.md` is the scaffold spec. Run `/bootstrap` to bootstrap a new project — don't follow it ad hoc from a mention in conversation.
 
 # github
 * Literate docs: apply `.claude/literate.md`'s prompt to each changed Python module, save as `01-literate/<module>.md`.

@@ -1,0 +1,18 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code when working with code in this repository.
+
+Read and follow all rules in the `.claude/` folder:
+- @.claude/process.md — development workflow, feature/task tracking rules, and
+  agent model selection
+- `02-doc/current.md` — session handoff; only the `## Open` section matters for
+  new work, see `02-doc/history.md` for the completed-work log
+- `02-doc/notes.md` — semi-permanent project notes
+
+Before writing or reviewing code, read and follow `.claude/style_guide.md`
+(coding standards, style rules, and review checklist) — apply it yourself
+before committing; do not substitute a generic/plugin review for it.
+
+We are developing an app called <APP NAME>. Literate docs are in `01-literate/`,
+project docs are in `02-doc/`, features are in `03-features/`, tasks are in
+`04-tasks/`, issues are in `05-issues/`, and the spec is in `02-doc/spec.md`.
