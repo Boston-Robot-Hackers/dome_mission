@@ -110,19 +110,25 @@ for dome_mission-native work going forward.
   spin map subscription" → `result=255` `WARNING`). Pose graph save (the real
   persisted SLAM state) is unaffected. Not fixed; dome_nav's to pick up if the
   legacy artifact is ever needed.
-- **`dome_control` coordination gap (found 2026-08-04)**: `dome_control`'s
-  `behavior_manager` also subscribes to `/intent` (its own `stop` /
-  `drive_square` / `turn_*` / `get_status` / `describe_scene` /
-  `count_objects`) and its `stop` intent only halts cmd_vel — it does not
-  cancel an outstanding `dome_mission` goal (`EXPLORING` /
-  `GOING_TO_TARGET`). No live double-dispatch today (the two packages'
-  intent-name sets are currently disjoint), but "stop" during a mission
-  leaves the FSM's goal active underneath halted motors. Tracked as F19 in
-  `dome_control` (`dome_control/03-features/notdone/
-  F19-dome-mission-intent-integration.md`) — the design decision there
-  (does `dome_control` publish a cancel, or does `dome_mission` itself treat
-  `"stop"` as CANCEL) affects this package too, since it may add `"stop"` to
-  `intent_parser.py`'s `NAME_TO_INTENT`.
+- **`dome_control` coordination gap — resolved (2026-08-04)**: `dome_control`'s
+  F19 decided **no automatic coordination**: `stop` stays a pure
+  `dome_control` motor halt (zero cmd_vel) with no knowledge of this
+  package's FSM state; cancelling an active mission goal remains this
+  package's own explicit `navigation_cancel`/`exploration_stop` intents
+  (reachable from the CLI's `nav`/soon-`mission` domain). No change needed
+  in `intent_parser.py`'s `NAME_TO_INTENT` — `"stop"` is intentionally not
+  added there. F19 closed and live-verified on the Pi (`behavior_manager` +
+  `mission_node` running together, confirmed no double-dispatch). See
+  `dome_control/03-features/done/F19-dome-mission-intent-integration.md`.
+- **Incoming from `dome_control` F22 (planned, not yet landed)**: a new
+  cross-package `robot subsystems` status command in `dome_control` wants a
+  `/mission/state` publisher added here, in `mission_node.py` — publish
+  `self.fsm.state.name` (transient-local QoS) on every FSM transition, so an
+  external reader gets the current state without waiting for the next
+  transition. Tracked as F22/T02 in `dome_control`
+  (`dome_control/04-tasks/notdone/TF22-subsystem-status-command.md`); this
+  package's own `03-features/`/`04-tasks/` should get a matching entry when
+  that task is actually picked up here.
 
 ## Architecture essentials
 
