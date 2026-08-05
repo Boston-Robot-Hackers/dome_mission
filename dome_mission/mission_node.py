@@ -30,6 +30,7 @@ from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
 from nav2_msgs.action import NavigateToPose
 from rclpy.action import ActionClient
 from rclpy.node import Node
+from rclpy.qos import QoSDurabilityPolicy, QoSProfile
 from std_msgs.msg import String
 
 from dome_mission.intent_parser import parse_intent
@@ -70,7 +71,18 @@ class MissionNode(Node):
         self.amcl_sub = self.create_subscription(
             PoseWithCovarianceStamped, "/amcl_pose", self.on_amcl_pose, 10
         )
+        state_qos = QoSProfile(depth=1, durability=QoSDurabilityPolicy.TRANSIENT_LOCAL)
+        self.state_pub = self.create_publisher(String, "/mission/state", state_qos)
+        self.publish_mission_state()
         self.get_logger().info("dome_mission mission_node up; owns /intent")
+
+    def publish_mission_state(self):
+        """Publish the FSM's current state on /mission/state (transient-local
+        QoS) so a late subscriber sees it without waiting for the next
+        transition."""
+        msg = String()
+        msg.data = self.fsm.state.name
+        self.state_pub.publish(msg)
 
     # Called on each /intent message (intent_sub).
     def on_intent(self, msg: String):
@@ -84,6 +96,7 @@ class MissionNode(Node):
         self.get_logger().info(
             f"intent {parsed.intent.name} -> state {self.fsm.state.name}"
         )
+        self.publish_mission_state()
         for command in commands:
             self.execute(command)
 

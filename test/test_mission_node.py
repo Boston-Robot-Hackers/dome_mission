@@ -62,6 +62,26 @@ def test_cancel_returns_idle(node):
     assert node.fsm.state is State.IDLE
 
 
+def test_mission_state_published_on_startup(node):
+    # F22 T02: /mission/state gets an initial publish at construction time so
+    # a late subscriber (transient-local QoS) sees IDLE without a transition.
+    assert node.state_pub.topic_name == "/mission/state"
+
+
+def test_mission_state_published_on_transition(node):
+    # F22 T02: every /intent-driven FSM transition re-publishes the new state,
+    # alongside the existing "intent ... -> state ..." log line. Published
+    # right after on_intent's own transition, before any commands it triggers
+    # run (those can drive further, separately-unpublished transitions —
+    # e.g. exploration_start with no live server settles back to IDLE).
+    published = []
+    node.state_pub.publish = lambda msg: published.append(msg.data)
+
+    node.on_intent(intent_msg("exploration_start"))
+
+    assert published == [State.EXPLORING.name]
+
+
 def test_malformed_intent_is_ignored(node):
     bad = String()
     bad.data = "{not json"

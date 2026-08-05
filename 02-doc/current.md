@@ -120,15 +120,7 @@ for dome_mission-native work going forward.
   added there. F19 closed and live-verified on the Pi (`behavior_manager` +
   `mission_node` running together, confirmed no double-dispatch). See
   `dome_control/03-features/done/F19-dome-mission-intent-integration.md`.
-- **Incoming from `dome_control` F22 (planned, not yet landed)**: a new
-  cross-package `robot subsystems` status command in `dome_control` wants a
-  `/mission/state` publisher added here, in `mission_node.py` — publish
-  `self.fsm.state.name` (transient-local QoS) on every FSM transition, so an
-  external reader gets the current state without waiting for the next
-  transition. Tracked as F22/T02 in `dome_control`
-  (`dome_control/04-tasks/notdone/TF22-subsystem-status-command.md`); this
-  package's own `03-features/`/`04-tasks/` should get a matching entry when
-  that task is actually picked up here.
+Newly-completed items are recorded in `02-doc/history.md`, not here.
 
 ## Architecture essentials
 

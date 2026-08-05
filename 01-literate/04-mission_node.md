@@ -1,6 +1,6 @@
 ---
-version: "1.0"
-generated: "2026-08-02"
+version: "1.1"
+generated: "2026-08-05"
 ---
 
 # The Mission Node: where pure logic meets the ROS graph
@@ -44,15 +44,27 @@ def __init__(self):
     self.amcl_sub = self.create_subscription(
         PoseWithCovarianceStamped, "/amcl_pose", self.on_amcl_pose, 10
     )
+    state_qos = QoSProfile(depth=1, durability=QoSDurabilityPolicy.TRANSIENT_LOCAL)
+    self.state_pub = self.create_publisher(String, "/mission/state", state_qos)
+    self.publish_mission_state()
     self.get_logger().info("dome_mission mission_node up; owns /intent")
 ```
 
 Everything the node needs across its whole lifetime is set up once here,
-in one place: two `ActionClient`s (one per primitive it composes) and
-three subscriptions (one command channel in, two state-tracking channels
-in). There's no dynamic subscription or client creation anywhere else in
-the file — this constructor *is* the complete wiring diagram for the
-node's ROS surface.
+in one place: two `ActionClient`s (one per primitive it composes), three
+subscriptions (one command channel in, two state-tracking channels in),
+and one outbound publisher. There's no dynamic subscription or client
+creation anywhere else in the file — this constructor *is* the complete
+wiring diagram for the node's ROS surface.
+
+`/mission/state` (F22, `dome_control`'s companion feature) is the one
+piece of `MissionNode`'s state that's externally observable at all — the
+FSM's state otherwise only ever reaches a log line. It's published once
+here at startup (so a subscriber that connects before any intent arrives
+still sees `IDLE` immediately) and `TRANSIENT_LOCAL` QoS means a
+subscriber that connects *after* startup also gets the last value without
+waiting on the next transition — the standard ROS2 "latched topic"
+pattern.
 
 ```mermaid
 flowchart TB
@@ -95,6 +107,7 @@ def on_intent(self, msg: String):
     self.get_logger().info(
         f"intent {parsed.intent.name} -> state {self.fsm.state.name}"
     )
+    self.publish_mission_state()
     for command in commands:
         self.execute(command)
 ```
@@ -102,8 +115,20 @@ def on_intent(self, msg: String):
 This is the file's clearest illustration of the "thin seam" principle:
 four lines of actual logic. Parse (delegating entirely to
 `intent_parser.parse_intent`), reject-and-log if unparseable, hand the
-parsed intent to the FSM, execute whatever commands come back. Note that
-today the FSM only ever returns zero or one command per `on_intent` call
+parsed intent to the FSM, execute whatever commands come back — and,
+alongside the existing state log line, re-publish `/mission/state` so an
+external reader sees this transition too.
+
+One scope boundary worth naming: only the transition `on_intent` itself
+makes is published. `execute(command)` can trigger further FSM
+transitions asynchronously (e.g. `start_explore` calling
+`fsm.on_done(STOPPED)` immediately if the `ExploreArea` server isn't
+ready) — those are *not* separately published. A reader polling
+`/mission/state` right after a command sees the state `on_intent` landed
+on, which may already be stale by the time an async callback resolves;
+it's a snapshot, not a guaranteed-current value.
+
+Note that today the FSM only ever returns zero or one command per `on_intent` call
 (see `mission_fsm.py` — every handler returns a list of at most one
 `Command`), but this code doesn't assume that: it loops over `commands`
 unconditionally, which means if the FSM's contract ever grows to emit
