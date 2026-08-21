@@ -15,7 +15,9 @@
 
 # tasks
 * Full task list before any design/code. `TFNN-<slug>.md` (`NN` matches the feature) in `04-tasks/{notdone,done,deferred}/`; `template.md` shows the format.
+* Each step is numbered `TFNN.N`, matching the file's own `TFNN` (e.g. `TF03.0`, `TF03.1`, ...), starting at `.0` — not a bare `T0N`.
 * Every step gets a test where feasible (else record why); every feature gets a dedicated test-writing task.
+* Task lists must never include a "regenerate literate docs" task — literate docs are refreshed later, at checkpoint, not as part of a feature's task list.
 * Last task done → move the task file to `done/`, set the feature's Done/Tests Written/Test Passing to yes, move the feature file to `done/`.
 
 # issues
@@ -29,9 +31,9 @@
 
 # agent model selection
 * Default subagent dispatch to haiku; upgrade only when the task needs judgment, not just data-gathering.
-* **haiku** — file/log discovery, "where is X defined", dependency-closure scans, counting, formatting. Use the `Explore` agent type for this.
-* **sonnet** — analysis, code review, writing, moderate reasoning, synthesis across subagent findings.
-* **opus** — architecture decisions, novel debugging, cross-cutting design tradeoffs.
+* **haiku** — file/log discovery, "where is X defined", dependency-closure scans, counting, formatting. Use the `explorer` agent (`.claude/agents/explorer.md`).
+* **sonnet** — analysis, code review, writing, moderate reasoning, synthesis across subagent findings. Use the `reviewer` agent (`.claude/agents/reviewer.md`).
+* **opus** — architecture decisions, novel debugging, cross-cutting design tradeoffs. Use the `architect` agent (`.claude/agents/architect.md`).
 
 # bootstrap
 * `.claude/bootstrap.md` is the scaffold spec. Run `/bootstrap` to bootstrap a new project — don't follow it ad hoc from a mention in conversation.

@@ -1,3 +1,6 @@
+---
+allowed-tools: Read Write Bash(mkdir *) Bash(chmod *) Glob
+---
 Bootstrap a new project scaffold in the current directory:
 
 1. Read and follow @.claude/bootstrap.md exactly — it is the full scaffold spec (folder structure, file-by-file instructions, template sources).
