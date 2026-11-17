@@ -29,6 +29,7 @@ from dome_semantic_msgs.msg import SemanticTargetArray
 from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
 from nav2_msgs.action import NavigateToPose
 from rclpy.action import ActionClient
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import QoSDurabilityPolicy, QoSProfile
 from std_msgs.msg import String
@@ -231,8 +232,8 @@ def main(args=None):
     node = MissionNode()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass  # Ctrl-C or the launcher's SIGTERM: a normal stop
     finally:
         node.destroy_node()
         rclpy.try_shutdown()

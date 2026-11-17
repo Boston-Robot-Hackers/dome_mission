@@ -463,8 +463,8 @@ def main(args=None):
     node = MissionNode()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass  # Ctrl-C or the launcher's SIGTERM: a normal stop
     finally:
         node.destroy_node()
         rclpy.try_shutdown()
@@ -472,7 +472,11 @@ def main(args=None):
 
 The standard rclpy node lifecycle: initialize the context, construct the
 node (which does all the wiring shown at the top of this document),
-`spin()` until interrupted, then clean up. `rclpy.try_shutdown()` (rather
+`spin()` until interrupted, then clean up. Two exceptions count as a
+normal stop: `KeyboardInterrupt` (Ctrl-C in a terminal) and
+`ExternalShutdownException`, which Kilted's rclpy raises from `spin()`
+when a launch file's SIGTERM has already shut the context down. Without
+the second, stopping a launch printed a traceback. `rclpy.try_shutdown()` (rather
 than the more commonly seen `rclpy.shutdown()`) is a small robustness
 choice — it's a no-op if shutdown has already happened for some other
 reason, rather than raising, which matters when this `finally` block runs
