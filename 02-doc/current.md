@@ -3,7 +3,7 @@
 Concise cold-start orientation. Detailed history lives in git log and the
 `04-tasks/` files — do **not** re-narrate it here.
 
-**Date:** 2026-08-02 · **Origin:** extracted from dome_nav per F35 / TF35
+**Date:** 2026-11-19 · **Origin:** extracted from dome_nav per F35 / TF35
 
 ## Status
 
@@ -93,6 +93,14 @@ for dome_mission-native work going forward.
 
 ## Open
 
+- **dome2 F05 (launch-file cleanup)**: TF05.2 skipped this package.
+  `launch/mission_explore.launch.py` is a known exception to the two-level
+  launch convention (it includes `dome_nav`, and DOME packages may not
+  include each other) and is blocked on `dome_nav` I13 (Nav2 params not yet
+  migrated to Kilted). It still has to be split or moved to dome2 once I13
+  lands. See `dome2/process/03-features/notdone/F05-launch-file-cleanup.md`.
+- **I01 still in `05-issues/open/`** even though the fix landed in
+  `dome_nav` `894c799`. It isn't live-verified; close it once it is.
 - **I02** (`05-issues/open/`): the explore/sim launch stack has no `amcl` —
   `mission_node`'s `/amcl_pose` subscription has zero publishers there, so
   go-to-label has no live pose even once F33 lands. Needs a localization-mode
@@ -101,25 +109,16 @@ for dome_mission-native work going forward.
   validation could collapse to a single EAFP `try`/`except`, but two open
   sub-questions (broad-except masking risk; where a more specific failure
   reason should be logged) are undecided — no code touched yet.
-- **Upstream blocker for live go-to-label**: `/semantic/targets` still has 0
-  publishers — `dome_semantic` T04 (publishing) isn't built yet. Explore leg
-  is verified; go-to-label leg is not (blocked, not broken). Closer than
-  before: T01–T03 of the producer side are now done.
+- **Go-to-label not live-verified yet**: `dome_semantic`'s
+  `semantic_map_node` now publishes `SemanticTargetArray` on
+  `/semantic/targets`, so the producer exists. The remaining blockers are I02
+  (no live `/amcl_pose`) and the Nav2 stack being blocked on `dome_nav` I13.
+  The explore leg is verified; go-to-label is blocked, not broken.
 - **Non-blocking noise**: slam_toolbox's legacy `.pgm`/`.yaml` map export
   intermittently fails (`dome_nav/slam_manager_node.py:161-176`, "Failed to
   spin map subscription" → `result=255` `WARNING`). Pose graph save (the real
   persisted SLAM state) is unaffected. Not fixed; dome_nav's to pick up if the
   legacy artifact is ever needed.
-- **`dome_control` coordination gap — resolved (2026-08-04)**: `dome_control`'s
-  F19 decided **no automatic coordination**: `stop` stays a pure
-  `dome_control` motor halt (zero cmd_vel) with no knowledge of this
-  package's FSM state; cancelling an active mission goal remains this
-  package's own explicit `navigation_cancel`/`exploration_stop` intents
-  (reachable from the CLI's `nav`/soon-`mission` domain). No change needed
-  in `intent_parser.py`'s `NAME_TO_INTENT` — `"stop"` is intentionally not
-  added there. F19 closed and live-verified on the Pi (`behavior_manager` +
-  `mission_node` running together, confirmed no double-dispatch). See
-  `dome_control/03-features/done/F19-dome-mission-intent-integration.md`.
 Newly-completed items are recorded in `02-doc/history.md`, not here.
 
 ## Architecture essentials
