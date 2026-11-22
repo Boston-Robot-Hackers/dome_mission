@@ -1,158 +1,137 @@
 ---
-version: "1.0"
-generated: "2026-08-02"
+version: "2.0"
+generated: "2026-11-22"
 ---
 
-# dome_mission: Theory of Operation
+# dome_mission — Theory of Operation
 
 ## What this package is for
 
-DOME is a mobile robot built from a stack of layered packages:
-`dome_nav` provides navigation and mapping *primitives* — explore a room,
-drive to a pose — with no idea what a "mission" is or why it's being
-asked to do either. `dome_mission` is the layer directly above it: the
-one place in the whole system that owns the question *"what should the
-robot be doing right now, and why?"* It receives high-level requests
-("start exploring," "go to the chair") over a single topic, `/intent`,
-and turns each one into a sequence of calls against `dome_nav`'s two
-primitives — the `ExploreArea` action and Nav2's `NavigateToPose` action —
-while tracking which primitive (if any) is currently running and what
-should happen when it finishes.
+The DOME robot can do several high-level things: **explore** an unknown space,
+**locate** objects while it explores, and **drive to** a named object ("go to the
+chair"). Someone has to decide which of those is happening at any moment, start
+it, stop it, and notice when it ends.
 
-Everything else in the DOME system that wants the robot to *do* something
-goes through `dome_mission`. Nothing downstream of it (in `dome_nav`)
-understands intents at all anymore — that separation is itself a
-significant piece of this package's design history, discussed below.
+That someone is **dome_mission**, the *mission-sequencing layer*. It sits between
+the things that issue requests (voice, `dome_control`'s CLI, diagnostic tools)
+and the things that move the robot (dome_nav's explorer, Nav2).
 
-## The five files, and how they build on each other
+## Why it exists as its own package
+
+dome_mission was **extracted from dome_nav** (feature F35). dome_nav had grown
+mission logic and semantic knowledge — label lookups, `/intent` handling — that
+didn't belong in a navigation package.
+
+The extraction enforces a clean layering:
+
+- **dome_nav is primitives only.** It exposes an `ExploreArea` action and knows
+  nothing about labels, missions, or `dome_semantic_msgs`.
+- **dome_mission owns intent and meaning.** It is the *sole* `/intent` handler
+  in the system and the only place labels are turned into poses.
+
+## The system around it
 
 ```mermaid
-flowchart BT
-    fsm["mission_fsm.py\n(pure state machine)"]
-    intent["intent_parser.py\n(pure JSON -> Intent)"]
-    label["label_resolver.py\n(pure label -> pose)"]
-    node["mission_node.py\n(ROS seam)"]
-    launch["mission_explore.launch.py\n(process composition)"]
-
-    intent -->|uses Intent enum| fsm
-    node -->|drives| fsm
-    node -->|uses| intent
-    node -->|uses| label
-    launch -->|starts| node
+flowchart LR
+    V["voice / dome_control / tools"] -- "/intent (JSON String)" --> M
+    DS["dome_semantic"] -- "/semantic/targets" --> M
+    AM["AMCL"] -- "/amcl_pose" --> M
+    M["dome_mission<br/>mission_node"] -- "ExploreArea action" --> DN["dome_nav<br/>explorer"]
+    M -- "NavigateToPose action" --> N2["Nav2"]
+    M -- "/mission/state" --> DC["dome_control"]
+    DN --> N2
 ```
 
-Three modules (`mission_fsm.py`, `intent_parser.py`, `label_resolver.py`)
-are pure Python: no ROS imports, no I/O, fully unit-testable with plain
-asserts. They hold *all* of this package's actual decision-making logic.
-One module (`mission_node.py`) is the ROS seam — a thin adapter that owns
-every subscription, publisher, and action client, and translates between
-live ROS messages and the pure modules' plain-Python vocabulary. One file
-(`mission_explore.launch.py`) is process composition — it doesn't run any
-of this package's own logic at all, it just starts `dome_nav`'s stack and
-adds `mission_node` on top of it.
+Two design choices stand out:
 
-This is a *functional core, imperative shell* architecture, applied
-deliberately and consistently: the "core" (the three pure modules) is
-where correctness lives and where it's cheap to verify; the "shell"
-(`mission_node.py` and the launch file) is where ROS's inherent
-messiness — async callbacks, action lifecycles, process startup ordering —
-is contained and kept from leaking into the parts of the system that are
-supposed to be simple to reason about.
+- **Actions, not topics or services**, for both behaviors. Exploring and driving
+  are long-running and cancellable, with a terminal result — exactly what ROS 2
+  actions model.
+- **Driving goes straight to Nav2.** dome_mission already holds the pose, so
+  routing it back through dome_nav would be a pointless hop.
 
-## The mission FSM: the actual center of gravity
+## Inside the package: core and shell
 
-`mission_fsm.py` (chapter 1) is where the real content of this package
-lives. It's a four-state machine — `IDLE`, `EXPLORING`, `LOCATING`,
-`GOING_TO_TARGET` — driven by two kinds of event: `Intent`s (requests
-from outside: "start exploring," "go to X") and `Outcome`s (reports that
-a previously-started primitive finished, and how). Its output is a list
-of `Command`s — data, not function calls — for `mission_node.py` to carry
-out. The single most important property of this state machine, stated as
-an explicit invariant in its own chapter, is that **no event, well-formed
-or not, can ever wedge it or crash it** — an inapplicable intent or a
-mistimed outcome is always a silent no-op, never an exception. That
-property is what lets a long-running node stay alive indefinitely against
-an external world (voice commands, action servers) that can send events
-in any order, at any time, including duplicated or out-of-order ones.
+The code follows the *functional core, imperative shell* pattern.
 
-## The two boundary translators
+```mermaid
+flowchart TB
+    subgraph Shell["Imperative shell (ROS)"]
+        MN["mission_node.py<br/>subscriptions, action clients, publisher"]
+    end
+    subgraph Core["Pure core (no ROS)"]
+        IP["intent_parser.py<br/>JSON → ParsedIntent"]
+        FSM["mission_fsm.py<br/>events → state + commands"]
+        LR["label_resolver.py<br/>label → nearest TargetPose"]
+    end
+    MN --> IP
+    MN --> FSM
+    MN --> LR
+    IP --> FSM
+```
 
-`intent_parser.py` (chapter 2) and `label_resolver.py` (chapter 3) are
-both *anti-corruption layers* in Eric Evans' sense: each keeps one
-specific external representation from leaking into the rest of the
-system. `intent_parser.py` turns arbitrary JSON off the wire into a
-strictly-typed `ParsedIntent` or `None` — never anything in between, so
-`mission_node.py` never has to think about malformed JSON, missing keys,
-or wrong types more than once. `label_resolver.py` turns the robot's
-current, pose-free notion of "the chair" into an actual `(x, y, yaw)`
-goal, picking the nearest same-labelled candidate when the robot's own
-position is known and falling back gracefully when it isn't. Both modules
-share a philosophy with the FSM they feed: uniform, predictable failure
-behavior (always `None`, never a raised exception, for the intent parser;
-always resolvable or cleanly `None`, never an exception, for the label
-resolver) so that every caller downstream can handle "this didn't work"
-exactly once, in exactly one way.
+- The **core** holds every decision. It is synchronous, deterministic, and
+  tested without a ROS graph.
+- The **shell** holds every callback, future, and message type. It decides
+  nothing on its own.
 
-## mission_node.py: the seam, not the substance
+The payoff is testability: almost all of the package's behavior is covered by
+plain pytest, and the ROS-dependent part is a thin layer of plumbing.
 
-`mission_node.py` (chapter 4) is intentionally the least "interesting"
-file in the package, in the sense that almost nothing in it makes a
-*decision* — decisions were already made by the three modules above.
-What it does is own the ROS graph: three subscriptions in
-(`/intent`, `/semantic/targets`, `/amcl_pose`), two action clients out
-(`ExploreArea`, `NavigateToPose`), and the bookkeeping each action's
-asynchronous goal/result lifecycle demands (tracking a goal handle,
-mapping a result code back to an `Outcome`, feeding that back into the
-FSM). Reading this chapter alongside chapter 1 is the best way to see the
-pure/impure split actually pay off: every one of `mission_node.py`'s
-callback methods is short precisely because the hard part (what should
-happen) was already decided elsewhere.
+## A request, end to end
 
-## The launch file: assembling a runnable system
+Here is what happens when someone says "go to the chair":
 
-`mission_explore.launch.py` (chapter 5) doesn't contain any of this
-package's logic — it *composes* two of `dome_nav`'s pre-built launch
-files (a simulated stack via Gazebo, or the real robot's stack) with this
-package's `mission_node`, so that the single-`/intent`-handler invariant
-the FSM and node are built around actually holds in the running system.
-Its most interesting content isn't architectural, it's a documented
-footgun: a naming collision between this file's own CLI flags and
-`better_launch`'s reserved framework-global options, which silently
-discarded a real value for months until traced and fixed by renaming
-the colliding parameter. It's a good, concrete lesson in what "don't
-reuse a framework's reserved names for something merely similar" costs
-when ignored.
+```mermaid
+sequenceDiagram
+    participant U as Producer
+    participant N as mission_node
+    participant P as intent_parser
+    participant F as MissionFsm
+    participant R as SemanticTargetStore
+    participant Nav as Nav2
+    U->>N: /intent {"name":"navigation_go","slots":{"label":"chair"}}
+    N->>P: parse_intent(json)
+    P-->>N: ParsedIntent(GO_TO_TARGET, label="chair")
+    N->>F: on_intent(GO_TO_TARGET, label="chair")
+    F-->>N: [DRIVE_TO_TARGET("chair")], state = GOING_TO_TARGET
+    N->>R: resolve("chair", robot_xy)
+    R-->>N: nearest chair pose
+    N->>Nav: NavigateToPose(goal)
+    Nav-->>N: result SUCCEEDED
+    N->>F: on_done(ARRIVED) → IDLE
+```
 
-## What isn't wired up yet
+Exploring is the same shape, with `ExploreArea` in place of Nav2 and no label
+resolution.
 
-Two real gaps exist in the live system today, both documented in
-`process/05-issues/open/` and worth knowing before trusting a live demo of this
-package fully:
+## The two rules that keep it simple
 
-- **I01**: `dome_nav`'s explorer has been observed to crash live on a
-  particular exploration-completion path (frontier exhaustion), leaving
-  `mission_node`'s FSM stuck waiting on a goal result that will never
-  arrive — there is currently no watchdog/timeout to recover from this.
-- **I02**: the explore/simulation stack this package's own launch file
-  starts uses `slam_toolbox` for localization, not Nav2's `amcl` — so
-  `mission_node`'s `/amcl_pose` subscription has no publisher in that
-  configuration, meaning go-to-label has no live robot pose to resolve or
-  drive from even once a semantic-target publisher exists.
-
-Neither gap is a defect in this package's own pure logic — both FSM and
-resolver already degrade gracefully in the presence of missing/late data.
-Both are gaps in how the surrounding system (mostly `dome_nav`) is
-composed and operated today.
+1. **Every behavior is a round trip from IDLE.** There's no preemption: to switch
+   behaviors, stop the current one first.
+2. **Inapplicable events are ignored.** A start while busy, or a late result
+   after a cancel, changes nothing. That's what makes the asynchronous action
+   results safe to feed back in.
 
 ## Reading order
 
-1. `01-mission_fsm.md` — the state machine; start here, it's the center
-   of the whole package.
-2. `02-intent_parser.md` — how a request becomes an `Intent`.
-3. `03-label_resolver.md` — how a label becomes a pose.
-4. `04-mission_node.md` — how the above three get wired into a live ROS
-   node.
-5. `05-mission_explore_launch.md` — how a live system actually gets
-   started.
-6. `X01-nav_intent_check.md` — an appendix: a manual diagnostic tool for
-   exercising the go-to-target path by hand.
+| Chapter | Module | What you learn |
+|---|---|---|
+| 01 | `mission_fsm.py` | the states, intents, and the no-op invariant |
+| 02 | `intent_parser.py` | the `/intent` wire contract |
+| 03 | `label_resolver.py` | targets, yaw, nearest-match resolution |
+| 04 | `mission_node.py` | how the shell wires it all to ROS |
+| 05 | `mission_explore.launch.py` | bringing up the full stack |
+| X01 | `tools/nav_intent_check.py` | a live smoke test for go-to-label |
+
+## Current limits worth knowing
+
+- **Explore is live-verified in sim; go-to-label is not.** The explore stack has
+  no AMCL (issue **I02**), so there's no live robot pose, and the Nav2 stack is
+  blocked on dome_nav I13.
+- **`/mission/state` doesn't update when a behavior finishes** — see chapter 04's
+  observations.
+- **`LOCATING` has no `/intent` name**, so it can't be entered from the live
+  system yet.
+- **The `/intent` transport is untyped JSON.** Deferred feature F08 proposes
+  typed messages.

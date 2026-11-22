@@ -1,40 +1,24 @@
 ---
-version: "1.0"
-generated: "2026-08-02"
+version: "2.0"
+generated: "2026-11-22"
 ---
 
-# The Label Resolver: turning "go to the chair" into a pose
+# label_resolver — Turning "chair" Into a Pose
 
-## The problem: names aren't poses
+## What this module does
 
-Nav2's `NavigateToPose` action wants a `PoseStamped` — an exact `(x, y,
-yaw)` in some frame. But nobody asks a robot to "go to (2.04, 0.15, 37
-degrees)"; they ask it to go to *the chair*. Somewhere in the system there
-has to be a translation from a human-meaningful label to a geometric goal,
-and — because the same label can plausibly be seen more than once, in more
-than one place (two chairs, both confidently labeled "chair") — that
-translation has to make a choice when there's ambiguity. `label_resolver.py`
-is that translation layer: a small, pure module holding the robot's current
-belief about where labeled things are, and a `resolve()` method that picks
-one when asked.
+When someone says "go to the chair," the FSM emits `DRIVE_TO_TARGET(label="chair")`.
+Somebody has to answer *which* chair, and *where*. That's `label_resolver.py`.
 
-Like `mission_fsm.py`, this module is deliberately framework-free. It
-doesn't subscribe to anything, doesn't know about `SemanticTargetArray`
-messages or quaternions-as-ROS-types — it works with a plain `TargetPose`
-dataclass and plain tuples. The ROS boundary (`mission_node.py`) is
-responsible for converting the typed message into `TargetPose` values
-*before* handing them to this module. That conversion work — reading
-`schema_version`, pulling `x`/`y` out of a `geometry_msgs/Pose`, converting
-a quaternion to yaw — happens once, at the edge, and everything on this
-side of the boundary works with plain, ROS-free values.
+It holds the **latest snapshot of confirmed semantic targets** (published by
+`dome_semantic`) and, given a label and the robot's position, picks a single
+goal pose. It is pure Python — the ROS-message conversion happens in the node.
 
-## The two building blocks
+## The data: `TargetPose`
 
 ```python
 @dataclass(frozen=True)
 class TargetPose:
-    """One confirmed target, map frame. x_m/y_m in meters, yaw_rad in radians."""
-
     label: str
     target_id: str
     x_m: float
@@ -42,87 +26,61 @@ class TargetPose:
     yaw_rad: float
 ```
 
-`TargetPose` is the module's entire vocabulary for "a place in the world
-with a name." Note what it *doesn't* have: no covariance, no confidence
-score, no timestamp. Those concerns — is this observation trustworthy, is
-it stale — are handled upstream (in whatever populates the store) or not
-at all yet; this dataclass only carries what `resolve()` actually needs to
-do its job: a label to match against, an id to distinguish multiple
-targets sharing a label, and a 2D pose to rank by distance and to steer
-toward. The field names bake in their units (`x_m`, `y_m`, `yaw_rad`) —
-following the project's naming convention of making unit confusion a
-compile-time-adjacent, grep-able non-issue rather than a runtime bug
-waiting to happen.
+This is a deliberate **projection** of the richer `SemanticTarget` message down
+to exactly what navigation needs:
+
+- **2-D position** in the `map` frame (`x_m`, `y_m`) — the robot drives on a
+  plane, so `z` is dropped.
+- **A single yaw angle** instead of a quaternion — easier to reason about and to
+  test.
+- **Units in the names**, so nobody wonders whether `x` is meters or cells.
+
+Being `frozen` makes each target an immutable value: the store can hand them out
+without worrying about callers mutating them.
+
+## Quaternions in one dimension
 
 ```python
 def yaw_from_quaternion(z: float, w: float) -> float:
-    """Planar (z-axis only) quaternion -> yaw. Matches the z=sin(yaw/2),
-    w=cos(yaw/2) encoding used when building the drive goal."""
     return 2.0 * math.atan2(z, w)
 ```
 
-This is a deliberately narrow special case of quaternion-to-Euler
-conversion, not a general one. A full quaternion has four components
-(`x, y, z, w`) and, in general, converting one to yaw/pitch/roll requires
-all four and a choice of rotation order. But DOME is a ground robot that
-only ever rotates about the vertical (z) axis — it can't pitch or roll —
-so every orientation it ever has or is ever asked to reach is a *planar*
-rotation, fully described by `z` and `w` alone (`x` and `y` are always
-zero for a pure z-axis rotation). The formula `yaw = 2 * atan2(z, w)` is
-the closed-form inverse of the encoding used everywhere else in this
-codebase to build a planar orientation:
-`z = sin(yaw/2), w = cos(yaw/2)` (visible, for instance, in
-`mission_node.py`'s `goal_pose()`, and again in `tools/nav_intent_check.py`'s
-`send_target()`). Because `atan2` (rather than a plain division-based
-`asin`/`acos`) is used, the conversion is well-behaved and unambiguous
-across the full ±180° range without any special-casing near the poles of
-a bare arcsine.
+A rotation by angle θ about the z-axis has the quaternion
+`(x, y, z, w) = (0, 0, sin(θ/2), cos(θ/2))`. So the angle is recoverable as
+`θ = 2·atan2(z, w)`.
 
-This is a good example of *knowing your domain* paying off in code
-simplicity: a general-purpose robotics library would need the full,
-more expensive quaternion→Euler machinery (and would have to worry about
-gimbal lock across three axes); because this codebase knows its robot
-can only rotate in the plane, it gets to use a two-line formula instead
-and there is no gimbal lock to worry about at all — the ambiguity that
-plagues 3D Euler conversions simply doesn't exist for a single-axis
-rotation.
+- This is **only valid for pure-yaw rotations** (`x = y = 0`) — true for a
+  ground robot's targets.
+- It's the exact inverse of what `mission_node.goal_pose` does when building
+  the Nav2 goal, so a target round-trips cleanly.
+- `atan2` (not `atan`) keeps the correct quadrant and handles `w = 0`.
 
-## The store: latest snapshot, not a history
+The general formula (used in `tools/nav_intent_check.py`) includes `x` and `y`
+terms; with `x = y = 0` it reduces to this one.
+
+## The store
 
 ```python
 @dataclass
 class SemanticTargetStore:
-    """Latest confirmed targets + nearest-match label resolution."""
-
     targets: list[TargetPose] = field(default_factory=list)
 
     def update(self, targets: list[TargetPose]):
         self.targets = list(targets)
 ```
 
-`SemanticTargetStore` deliberately isn't an incremental, merge-as-you-go
-structure — `update()` doesn't add targets to what's already there, it
-*replaces* the whole list. This mirrors how the upstream semantic-mapping
-system is expected to work (per `mission_node.py`'s `on_semantic_targets`,
-which is triggered by the whole `SemanticTargetArray` topic, not a
-per-target stream): every message on `/semantic/targets` carries the
-*complete current belief* about confirmed targets, not a delta. That
-makes `SemanticTargetStore` a "latest snapshot" cache, not a database —
-simpler to reason about (no need to expire, dedupe, or merge stale
-entries against fresh ones) at the cost of depending entirely on the
-publisher sending complete snapshots reliably. `list(targets)` (rather
-than assigning the incoming list directly) is a small but meaningful
-defensive copy: it protects the store from a caller that later mutates
-the list object it originally handed over.
+`update` **replaces** the whole list rather than merging. That matches the
+upstream contract: each `SemanticTargetArray` is a *complete snapshot* of the
+semantic map, not a delta. The `list(...)` copy decouples the store from the
+caller's list.
 
-## Resolving a label: nearest match wins, with a graceful fallback
+`field(default_factory=list)` is the standard dataclass idiom for a mutable
+default — a bare `= []` would be shared between instances.
+
+## Resolution: nearest match
 
 ```python
-def resolve(
-    self, label: str, robot_xy: tuple[float, float] | None
-) -> TargetPose | None:
-    """Nearest label-matching target to robot_xy, or None if no match.
-    robot_xy None -> first match (no pose to rank by)."""
+def resolve(self, label, robot_xy):
     matches = [target for target in self.targets if target.label == label]
     if not matches:
         return None
@@ -130,95 +88,43 @@ def resolve(
         return matches[0]
     robot_x, robot_y = robot_xy
 
-    def distance(target: TargetPose) -> float:
+    def distance(target):
         return math.hypot(target.x_m - robot_x, target.y_m - robot_y)
 
     return min(matches, key=distance)
 ```
 
-Three cases, read top to bottom:
-
-1. **No target with this label at all** → `None`. The caller
-   (`mission_node.drive_to_label`) turns this directly into
-   `Outcome.DRIVE_FAILED`, which the FSM maps back to `IDLE` — a clean,
-   well-defined failure rather than an exception bubbling up through a
-   ROS callback.
-2. **One or more matches, but no known robot position** → the *first*
-   match, arbitrarily. This is a considered fallback, not a bug: the
-   docstring is explicit ("no pose to rank by"), and the alternative —
-   refusing to resolve at all just because localization data hasn't
-   arrived yet — would make the whole go-to-target behavior strictly
-   *less* available whenever pose tracking is briefly unavailable, for no
-   real accuracy benefit (with no pose, there is no principled way to
-   pick a "better" match anyway).
-3. **One or more matches, robot position known** → the nearest one, by
-   plain Euclidean distance (`math.hypot`, the numerically well-behaved
-   way to compute `sqrt(dx² + dy²)` — it avoids the intermediate overflow
-   or precision loss a naive `sqrt(dx**2 + dy**2)` can suffer for very
-   large or very small components).
-
-The `min(matches, key=distance)` line is a clean, idiomatic instance of a
-*linear scan for the arg-min* — the standard, simplest algorithm for
-"which of these N things is closest," with O(n) time and O(1) extra space
-where n is the number of same-labelled targets (typically tiny — a handful
-of chairs, not thousands). There's no spatial index here (no k-d tree, no
-grid), and there doesn't need to be one: this only ever scans candidates
-that already share a label, which in practice is a small set, not the
-robot's entire semantic map.
-
-## Where this fits in the go-to-target flow
-
 ```mermaid
-sequenceDiagram
-    participant Sem as /semantic/targets (SemanticTargetArray)
-    participant MN as mission_node
-    participant Store as SemanticTargetStore
-    participant FSM as mission_fsm
-
-    Sem->>MN: on_semantic_targets(msg)
-    MN->>MN: gate schema_version, convert to TargetPose
-    MN->>Store: update(kept)
-
-    Note over MN: later, a GO_TO_TARGET intent arrives
-    FSM->>MN: Command(DRIVE_TO_TARGET, label)
-    MN->>Store: resolve(label, robot_xy)
-    alt match found
-        Store-->>MN: TargetPose
-        MN->>MN: goal_pose(target) -> NavigateToPose goal
-    else no match
-        Store-->>MN: None
-        MN->>FSM: on_done(DRIVE_FAILED)
-    end
+flowchart TD
+    A[label, robot_xy] --> B[filter targets by label]
+    B --> C{any matches?}
+    C -- no --> N[None: caller fails the drive]
+    C -- yes --> D{robot_xy known?}
+    D -- no --> F[first match]
+    D -- yes --> G[min by Euclidean distance]
 ```
 
-The store sits quietly updating in the background every time a new
-`SemanticTargetArray` arrives, and only gets *queried* — via `resolve()` —
-at the moment a `DRIVE_TO_TARGET` command needs an actual pose to drive
-to. It is, in effect, a small, purpose-built read-mostly cache sitting
-between an asynchronous producer (whatever publishes `/semantic/targets`,
-today nothing — see the F33 blocker in the project's `current.md`) and an
-on-demand consumer (`drive_to_label`).
+A few things worth noticing:
 
-## Observations
+- **Linear scan, O(n).** The semantic map holds tens of targets, not millions,
+  so a spatial index (k-d tree) would be pure overhead.
+- **`math.hypot`** is the numerically careful way to compute √(dx² + dy²).
+- **Straight-line distance, not path distance.** The "nearest" chair may be
+  behind a wall. Nav2 will still get there, just maybe not to the closest one
+  by travel.
+- **No pose → first match.** Navigation proceeds rather than blocking. Today
+  that path is the *common* one in sim, because the explore stack has no AMCL
+  (issue **I02**).
 
-- **Named the "typed successor to `nav_manager`'s
-  `find_nearest_confirmed`"** (per the module docstring): this is a
-  rewrite of pre-existing logic from a predecessor node, now carrying yaw
-  where the old version apparently didn't. Worth knowing if debugging
-  against old expectations — the resolution *policy* (nearest wins, first
-  as fallback) is preserved, but the shape of the data it operates on is
-  new.
-- **No tie-breaking rule beyond `min`'s stability**: if two targets with
-  the same label are exactly equidistant from the robot, `min()` returns
-  the first one encountered in `matches` (Python's `min` is stable in
-  that sense) — deterministic, but not something the docstring calls out
-  explicitly. Unlikely to matter in practice (exact ties are a measure-zero
-  event with real sensor data) but worth knowing if a test ever seems to
-  pick a surprising target.
-- **No staleness / expiry**: a target confirmed once, long ago, and never
-  seen since remains resolvable forever, with equal weight to one seen a
-  moment ago — the "latest snapshot" model (see `SemanticTargetStore`
-  above) is only as fresh as the *last* `SemanticTargetArray` message,
-  which itself is expected to already reflect current confidence (that
-  filtering, if any, is presumably upstream, in whatever publishes to
-  `/semantic/targets`).
+## Observations and possible improvements
+
+1. **The no-pose fallback is a silent default.** Picking `matches[0]` when the
+   robot's position is unknown is arbitrary and unlogged; the caller can't tell
+   it happened. At minimum the node should log it.
+2. **Exact, case-sensitive label match.** `"Chair"` won't find `"chair"`.
+   Normalizing at the ingest boundary would be cheap.
+3. **Path cost would beat Euclidean distance** if there are many candidates —
+   Nav2's `ComputePathToPose` could rank them, at the price of a service call
+   per candidate.
+4. **`target_id` is carried but unused** here. It would be useful in the
+   "Driving to …" log line, to say *which* chair was chosen.
