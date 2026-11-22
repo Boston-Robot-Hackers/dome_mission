@@ -59,9 +59,12 @@ drop and why.
 ### CLAUDE.md
 Copy from `.claude/templates/CLAUDE.md.template` and replace `<APP NAME>`.
 
-### Makefile
-Copy from `.claude/templates/Makefile.template` and replace `<APP NAME>` in
-the header comment. It starts with only `help` (the default target); user-facing
+### Makefile (non-ROS 2 projects only)
+Skip this for a ROS 2 package — it is built with `colcon` and run with
+`ros2 run` / `ros2 launch`, so it gets no Makefile.
+
+Otherwise, copy from `.claude/templates/Makefile.template` and replace
+`<APP NAME>` in the header comment. It starts with only `help` (the default target); user-facing
 tool targets are added as features land. Development commands (`uv sync`,
 `uv run pytest`, `uv run ruff`) are listed in CLAUDE.md's `## Commands`; add
 Makefile targets for them only when something needs them. See the Makefile
@@ -96,9 +99,10 @@ Prompt the user to:
 4. Create `process/02-doc/history.md` with a one-line header (e.g. "# History")
    — it starts empty and only grows as work is marked done
 5. Add any durable architecture notes to `process/02-doc/notes.md`
-6. Replace `<APP NAME>` in `CLAUDE.md`, `README.md`, `Makefile`, and `LICENSE`
-   with the actual app name, author, and year
+6. Replace `<APP NAME>` in `CLAUDE.md`, `README.md`, `Makefile` (if any), and
+   `LICENSE` with the actual app name, author, and year
 7. Fill in `settings.json`'s `autoMode.environment` block with the real project
-   purpose, package manager, the `uv run pytest` / `make help` commands, and source
-   control location
+   purpose, package manager, the test command (`uv run pytest`, or
+   `python3 -m pytest` for a ROS 2 package), `make help` if there is a
+   Makefile, and the source control location
 8. Define the first feature and matching task file before writing any code

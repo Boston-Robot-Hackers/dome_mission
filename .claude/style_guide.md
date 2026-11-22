@@ -1,6 +1,6 @@
 # Code Review Checklist
 
-Version: 4.4 — universal Python review guide.
+Version: 4.5 — universal Python review guide.
 
 `MUST` blocks unless waived in the task/PR. `SHOULD` = expected default.
 `CONSIDER` = review prompt, not a mechanical rule. Prefer a linter/type-checker
@@ -200,10 +200,12 @@ Applies to any project with a UI layer (Streamlit, Flask, Dash, etc.).
 - Lifecycle components release threads, timers, pub/sub, and hardware cleanly.
 
 ## Makefile
+Applies to non-ROS 2 projects only. A ROS 2 package is built with `colcon` and
+run with `ros2 run` / `ros2 launch`, so it needs no Makefile.
 
 **MUST**
-- Every project has a Makefile, with `make help` as the default target giving
-  a short list of targets.
+- Every non-ROS 2 project has a Makefile, with `make help` as the default
+  target giving a short list of targets.
 - The Makefile holds the commands a user of the tool runs (e.g. `validate`,
   `copy`, `deploy`, `reset`). It may also hold development targets (`test`,
   `fmt`, `lint`), e.g. when a user-facing target or a scheduled job depends on

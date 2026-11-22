@@ -23,6 +23,8 @@ We are developing an app called <APP NAME>. All process files live under
 ## Commands
 
 The `Makefile` holds the app's user-facing targets (`make help` lists them).
+For a ROS 2 package, drop that line and the `uv` commands: list the `colcon
+build` / test / `ros2 launch` commands instead — it has no Makefile.
 Development commands run through `uv` from the repo root: `uv sync` (setup),
 `uv run pytest` (tests), and `uv run ruff format` / `uv run ruff check` — on
 changed files only, never the whole repo.
