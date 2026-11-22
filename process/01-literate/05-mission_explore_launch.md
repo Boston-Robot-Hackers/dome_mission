@@ -199,8 +199,8 @@ the wrong stack.
   module docstring, this launch file only ever brings up navigation +
   exploration, never the semantic-perception pipeline that would populate
   `/semantic/targets`. That's consistent with the F33/TF33 blocker
-  documented elsewhere (`02-doc/current.md`,
-  `05-issues/open/I02-...md`) — go-to-label has no live data source in
+  documented elsewhere (`process/02-doc/current.md`,
+  `process/05-issues/open/I02-...md`) — go-to-label has no live data source in
   any launch this file currently offers, sim or real.
 - **No validation that `world_name` is set when `sim_mode` is true.**
   `sim_nav_full.launch.py` is passed `world_name=world_name` even if it's

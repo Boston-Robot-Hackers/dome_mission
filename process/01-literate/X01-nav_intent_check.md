@@ -181,7 +181,7 @@ prose, exactly what will happen before it happens.
   against the explore/sim stack this package's own launch file starts
   (`--sim_mode true`), since nothing publishes `/amcl_pose` there — it
   needs `dome_nav`'s separate, currently-unwired localization-mode stack
-  (see `05-issues/open/I02-...md`). Worth fixing (or at least documenting
+  (see `process/05-issues/open/I02-...md`). Worth fixing (or at least documenting
   loudly at the top of the script) before the next person tries to run it
   against a fresh `mission_explore.launch.py --sim_mode true` and gets a
   confusing 10-second timeout instead of a robot arriving somewhere.

@@ -39,3 +39,27 @@ layer so dome_nav is primitives-only and never depends on `dome_semantic_msgs`.
   package because dome_nav is ament_python and can't host rosidl interfaces.
 - **dome_semantic_msgs** (ament_cmake) — `SemanticTarget` / `SemanticTargetArray`.
 - dome_mission is ament_python, depends on both.
+
+## Architecture essentials
+
+- **Pure/ROS split** (dome_nav L0/L1): `mission_fsm.py`, `intent_parser.py` and
+  `label_resolver.py` are pure; `mission_node.py` is the thin ROS seam.
+- FSM commands (`START_EXPLORE / CANCEL_EXPLORE / DRIVE_TO_TARGET /
+  CANCEL_DRIVE`) are executed by the node's action clients: `ExploreArea` for
+  explore, Nav2 `NavigateToPose` for drive-to-target.
+- `mission_node` publishes FSM state on `/mission/state` (transient-local) for
+  `dome_control`.
+
+## Task tracking
+
+- The extraction's authority was dome_nav's `TF35-mission-layer.md`, now
+  relocated here as `process/04-tasks/done/TF35-mission-layer.md`. This
+  package's own `process/03-features/` and `process/04-tasks/` cover
+  dome_mission-native work.
+
+## Tooling
+
+- `ruff` isn't preinstalled: `python3 -m pip install --user
+  --break-system-packages ruff`. Config is `ruff.toml`, which ignores `EXE001`
+  (the style guide mandates the shebang on every `.py` regardless of the
+  executable bit).

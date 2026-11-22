@@ -1,5 +1,7 @@
 # TF02 — Intent-Driven Navigation (Feature F02)
 
+**Date Created:** 2026-06-07
+
 > Relocated from dome_nav → dome_mission (2026-07-31, F35 T06). See F02 banner.
 > Historical record; the live logic is now dome_mission's `label_resolver` +
 > `mission_node` (TF35 T05).

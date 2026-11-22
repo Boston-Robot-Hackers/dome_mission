@@ -220,7 +220,7 @@ that `on_amcl_pose` simply never fires during an explore run, so
 "first match" rather than failing), but it does mean nearest-match
 ranking is currently unreachable in the explore/sim configuration this
 package actually ships a launch file for. This is tracked as
-`05-issues/open/I02-no-amcl-in-explore-stack-blocks-go-to-label.md` — worth
+`process/05-issues/open/I02-no-amcl-in-explore-stack-blocks-go-to-label.md` — worth
 reading before assuming pose-based ranking is exercised by any live test
 run today.
 
@@ -329,7 +329,7 @@ result that will never arrive. The one exception worth naming explicitly:
 `server_is_ready()` and `accepted` failures are handled synchronously and
 correctly, but if the goal *is* accepted and the server then crashes
 mid-session without ever completing the goal — which has been observed
-live (see `05-issues/open/I01-explore-manager-crash-on-completion.md`) —
+live (see `process/05-issues/open/I01-explore-manager-crash-on-completion.md`) —
 `on_explore_result`'s callback simply never fires, because the action
 result future never resolves. In that scenario the node itself survives,
 but the FSM is left in `EXPLORING` indefinitely with no timeout to rescue
@@ -488,13 +488,13 @@ partially failed, or shutdown was triggered elsewhere in the process).
 - **No watchdog on either action lifecycle**: as noted above in the
   explore-lifecycle discussion, if an accepted goal's result future never
   resolves — whether because the server crashed
-  (`05-issues/open/I01-...md`) or hung — the FSM has no way to notice and
+  (`process/05-issues/open/I01-...md`) or hung — the FSM has no way to notice and
   recover on its own; the node would need an external timeout to detect
   and force an `on_done(STOPPED)` / `on_done(DRIVE_FAILED)` in that case.
   This is a natural next hardening step given I01 was reproduced live,
   not just theoretical.
 - **`/amcl_pose` has no publisher in the shipped explore/sim launch**: see
-  the dedicated discussion above and `05-issues/open/I02-...md`. Anyone
+  the dedicated discussion above and `process/05-issues/open/I02-...md`. Anyone
   extending or testing `drive_to_label`'s distance-ranking behavior should
   be aware `self.robot_xy` is `None` throughout a normal
   `mission_explore.launch.py --sim_mode true` run today.

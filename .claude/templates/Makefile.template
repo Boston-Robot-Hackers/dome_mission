@@ -1,0 +1,17 @@
+# Makefile — commands for using <APP NAME>
+#
+# Mainly tool targets: what a user of the app runs. Development commands
+# (sync, tests, ruff) run through `uv` directly (see CLAUDE.md); add targets
+# for them only when something depends on them.
+
+.PHONY: help
+
+.DEFAULT_GOAL := help
+
+help: ## List targets
+	@awk 'BEGIN {FS = ":.*## "} \
+		/^[a-zA-Z_-]+:.*## / {printf "  %-10s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+
+# Add user-facing targets here as features land, each with a `## description`:
+#   validate: ## Check a card
+#   	uv run <app> check

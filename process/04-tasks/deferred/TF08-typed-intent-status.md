@@ -1,5 +1,7 @@
 # TF08 — Typed Intent/Status Messages for F08
 
+**Date Created:** 2026-06-18
+
 > Relocated from dome_nav → dome_mission (2026-07-31, F35 staged move). See F08 banner.
 
 Task file name: TF08-typed-intent-status.md

@@ -126,7 +126,7 @@ when ignored.
 ## What isn't wired up yet
 
 Two real gaps exist in the live system today, both documented in
-`05-issues/open/` and worth knowing before trusting a live demo of this
+`process/05-issues/open/` and worth knowing before trusting a live demo of this
 package fully:
 
 - **I01**: `dome_nav`'s explorer has been observed to crash live on a

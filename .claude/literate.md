@@ -1,4 +1,4 @@
-You are an expert in literate programming. Convert the following Python program 
+You are an expert in literate programming. Convert the following program (Python, JavaScript, or any other language) 
 into a literate programming document in Markdown format. Use mermaid for diagrams.
 
 Structure the document as a narrative that a thoughtful programmer would want 
@@ -44,7 +44,7 @@ Guidelines:
   architectural design overview (how the pieces fit together, the key
   abstractions, and the data/control flow across modules)
 
-Output format: a single Markdown document with alternating prose and fenced Python code blocks. Include diagrams of flow, algorithm, interesting or tricky data structures. Do not include the full program text. Put the file in the `01-literate/` directory.
+Output format: a single Markdown document with alternating prose and fenced code blocks in the program's language. Include diagrams of flow, algorithm, interesting or tricky data structures. Do not include the full program text. Put the file in the `process/01-literate/` directory.
 
 Filename: prefix with a two-digit number so files sort in logical reading sequence (e.g. `01-base_api.md`, `07-robot_controller.md`). Choose the number to reflect dependency order — foundational modules first, higher-level orchestration last. Number those that are sort of trivial or self evident as appendicixes as X01, X02 etc.
 

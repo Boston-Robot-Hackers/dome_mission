@@ -5,21 +5,31 @@ This file provides guidance to Claude Code when working with code in this reposi
 Read and follow all rules in the `.claude/` folder:
 - @.claude/process.md — development workflow, feature/task tracking rules, and
   agent model selection
-- `02-doc/current.md` — session handoff; only the `## Open` section matters for
-  new work, see `02-doc/history.md` for the completed-work log
-- `02-doc/notes.md` — semi-permanent project notes
+- `process/02-doc/current.md` — session handoff; only the `## Open` section
+  matters for new work, see `process/02-doc/history.md` for the completed-work
+  log
+- `process/02-doc/notes.md` — semi-permanent project notes
 
 Before writing or reviewing code, read and follow `.claude/style_guide.md`
 (coding standards, style rules, and review checklist) — apply it yourself
 before committing; do not substitute a generic/plugin review for it.
 
-We are developing an app called <APP NAME>. Literate docs are in `01-literate/`,
-project docs are in `02-doc/`, features are in `03-features/`, tasks are in
-`04-tasks/`, issues are in `05-issues/`, and the spec is in `02-doc/spec.md`.
+We are developing an app called <APP NAME>. All process files live under
+`process/`: literate docs in `process/01-literate/`, project docs in
+`process/02-doc/`, features in `process/03-features/`, tasks in
+`process/04-tasks/`, issues in `process/05-issues/`, and the spec at
+`process/02-doc/spec.md`.
+
+## Commands
+
+The `Makefile` holds the app's user-facing targets (`make help` lists them).
+Development commands run through `uv` from the repo root: `uv sync` (setup),
+`uv run pytest` (tests), and `uv run ruff format` / `uv run ruff check` — on
+changed files only, never the whole repo.
 
 ## Session Start
 
-At session start, read `02-doc/current.md`'s `## Open` section for status and
+At session start, read `process/02-doc/current.md`'s `## Open` section for status and
 next steps. If it is unreadable, fall back to `git log --oneline -15` and say
 so. (The `/start` skill already does this in more depth — use it when
 available; this is the fallback.)
@@ -46,6 +56,12 @@ verify, say "unverified" explicitly.
 This checkout may not include required credentials or data files. Before any
 live external-system or data-extract work, check for these and stop with a
 short list of what's missing instead of improvising.
+
+## Hazards before any edit
+
+List here, one line each, only what must be known before *any* edit (e.g.
+"commits on main deploy automatically"). Everything else durable goes in
+`process/02-doc/notes.md`.
 
 ## Write Safety
 

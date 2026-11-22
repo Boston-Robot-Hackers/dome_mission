@@ -1,0 +1,44 @@
+# Ruff configuration, calibrated against this project's Python style guide
+# (.claude/style_guide.md). Copied as-is by /bootstrap into a new project's
+# `ruff.toml`. This is a starting point, not a fixed contract — once the new
+# project has real code, run `ruff check`, see what it actually finds, and
+# recalibrate the `select` list and pylint thresholds below to match.
+
+line-length = 88
+
+[lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes (unused imports, undefined names, etc.)
+    "B",      # flake8-bugbear (mutable defaults, common bug patterns)
+    "BLE",    # flake8-blind-except (bare/overly-broad except)
+    "I",      # isort (import sorting)
+    "UP",     # pyupgrade (Optional[X] -> X | None, .format() -> f-string, etc.)
+    "SIM",    # flake8-simplify (enumerate(), context managers, etc.)
+    "TID",    # flake8-tidy-imports (relative imports, banned-api)
+    "PERF",   # flake8-perf (unnecessary allocations/copies)
+    "S105", "S106", "S107",  # flake8-bandit: hardcoded password string/arg/default
+    "S110", "S112",          # flake8-bandit: silent try/except/pass/continue
+    "PLR0912",  # too-many-branches
+    "PLR0913",  # too-many-arguments
+    "PLR0915",  # too-many-statements (proxy for function length)
+]
+# Not selected by default — revisit per project:
+# - ERA (eradicate): dropped. It flags the hook-stamped `# Version:` and
+#   `# Updated:` header lines in every file; commented-out code is a review
+#   item in the style guide instead.
+# - ANN (flake8-annotations): only turn on if the project commits to type
+#   hints project-wide. On an intentionally unannotated codebase this can
+#   raise hundreds of findings, so it's dropped rather than adopted
+#   piecemeal.
+# - T20 (flake8-print): drop this select if the project has a CLI that
+#   legitimately prints progress/output; keep it selected for
+#   library/ROS2-style modules where a stray print() is always a debug
+#   leftover.
+# - T10 (flake8-debugger) and PLR1702 (too-many-nested-blocks): harmless to
+#   add; PLR1702 needs ruff's --preview mode in some versions.
+
+[lint.pylint]
+max-branches = 8
+max-args = 5

@@ -1,5 +1,7 @@
 # F35 — dome_mission: Mission-Sequencing Layer
 
+**Date Created:** 2026-07-31
+
 > Relocated from dome_nav → dome_mission (2026-07-31, TF35 T08) as this package's
 > founding record — the extraction (T01–T08) is complete, including the T07
 > live sim bring-up (verified 2026-08-01: explore ran end-to-end via
