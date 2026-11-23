@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Mission-sequencing layer for the DOME robot (extracted from dome_nav per F35).
+Mission-sequencing layer for the DOME robot (extracted from dome_nav per F03).
 dome_mission owns `/intent` and orchestrates high-level behaviors by composing
 lower-level primitives; dome_nav becomes primitives-only and never depends on
 `dome_semantic_msgs`.
@@ -32,7 +32,7 @@ lower-level primitives; dome_nav becomes primitives-only and never depends on
 - Pure/ROS split: a ROS-free FSM (`mission_fsm.py`) + parser (`intent_parser.py`)
   hold all logic; `mission_node.py` is a thin ROS seam.
 - Transport = ROS actions (FSM→BT forward-compatible; a later swap to
-  `py_trees_ros` keeps the interface). See TF35 T01 rationale.
+  `py_trees_ros` keeps the interface). See TF03 T01 rationale.
 - Boundary: per-goal abort authority stays in dome_nav's explorer watchdog; the
   FSM owns only mission-level start/stop/preempt + the terminal action outcome.
 

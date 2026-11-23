@@ -48,7 +48,7 @@ Completed items moved out of `current.md`'s `## Open` section, newest first.
   `label_resolver` / `mission_node` / `mission_explore.launch.py`, plus the
   `X01-nav_intent_check` appendix.
 
-- **TF35 T07 — explore action swap + top-level launch (2026-08-01)**: explorer
+- **TF03 T07 — explore action swap + top-level launch (2026-08-01)**: explorer
   exposes the `ExploreArea` action (dropped `/intent`); `mission_node.start_explore`
   is its client (result → FSM `on_done`). `launch/mission_explore.launch.py`
   composes dome_nav's explore stack + mission_node, gated by a `sim_mode` str
@@ -57,11 +57,11 @@ Completed items moved out of `current.md`'s `## Open` section, newest first.
   server (`/explore_manager`), no stray `/intent` subs; `exploration_start`
   drove a real explore session to `DONE` (`reached: 2, failed: 0`).
 
-- **TF35 T06 + T08 (2026-07-31)**: dome_nav deleted `nav_manager` +
-  `nav_manager_node` (go-to-target now lives here); F02/TF02 and F35/TF35
+- **TF03 T06 + T08 (2026-07-31)**: dome_nav deleted `nav_manager` +
+  `nav_manager_node` (go-to-target now lives here); F01/TF01 and F03/TF03
   records relocated into this package; dome_nav docs updated.
 
-- **TF35 T02–T05 (extraction from dome_nav)**: package skeleton +
+- **TF03 T02–T05 (extraction from dome_nav)**: package skeleton +
   `dome_nav_msgs`; pure `mission_fsm.py` (`IDLE / EXPLORING / LOCATING /
   GOING_TO_TARGET`); `intent_parser.py` + `/intent` ownership; go-to-target via
   `label_resolver.py` (`SemanticTargetStore.resolve`, `yaw_from_quaternion`)

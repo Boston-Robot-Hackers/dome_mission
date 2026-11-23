@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 # mission_node.py — ROS node: owns /intent, drives the mission FSM
 # Author: Pito Salas and Claude Code
+# Version: 1
+# Created: 2026-11-22
+# Updated: 2026-11-22
 # Open Source Under MIT license
 
-"""Mission-sequencing node (F35).
+"""Mission-sequencing node (F03).
 
-Owns `/intent` (TF35 T04): deserializes each payload, maps it to a mission Intent
+Owns `/intent` (TF03 T04): deserializes each payload, maps it to a mission Intent
 (intent_parser), drives the pure MissionFsm, and executes the emitted primitive
 commands. The FSM/parser/resolver hold the logic; this node is the ROS seam.
 
-Go-to-target (TF35 T05): subscribes the typed `SemanticTargetArray`, keeps a pure
+Go-to-target (TF03 T05): subscribes the typed `SemanticTargetArray`, keeps a pure
 `SemanticTargetStore`, and on a DRIVE_TO_TARGET command resolves the label to a
 map-frame pose (nearest to the robot) and drives there via Nav2 `NavigateToPose`
 directly — no dome_nav hop. A missing label fails the behavior cleanly

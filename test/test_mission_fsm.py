@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
-# test_mission_fsm.py — TF35 T03: pure mission FSM transitions + emitted commands
+# test_mission_fsm.py — TF03 T03: pure mission FSM transitions + emitted commands
 # Author: Pito Salas and Claude Code
+# Version: 1
+# Created: 2026-11-22
+# Updated: 2026-11-22
 # Open Source Under MIT license
 
 import pytest

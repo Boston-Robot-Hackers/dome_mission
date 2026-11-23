@@ -2,7 +2,7 @@
 
 Mission-sequencing layer for the DOME robot. Owns `/intent` and drives a pure
 mission FSM that composes dome_nav primitives (`ExploreArea` action) and Nav2
-`NavigateToPose` — keeping dome_nav free of mission and semantic knowledge (F35).
+`NavigateToPose` — keeping dome_nav free of mission and semantic knowledge (F03).
 
 ## Architecture
 

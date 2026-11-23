@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 # mission_fsm.py — pure ROS-free mission-sequencing FSM
 # Author: Pito Salas and Claude Code
+# Version: 1
+# Created: 2026-11-22
+# Updated: 2026-11-22
 # Open Source Under MIT license
 
-"""Pure, ROS-free mission-sequencing FSM (F35 / TF35 T03).
+"""Pure, ROS-free mission-sequencing FSM (F03 / TF03 T03).
 
 Maps intent events and behavior-completion outcomes to state transitions and
 emitted primitive commands. The ROS layer (mission_node) executes those commands
@@ -18,7 +21,7 @@ Behaviors:
                     in mission intent/telemetry)
   - go to target:   IDLE -> GOING_TO_TARGET -> IDLE (drive to a resolved target)
 
-Boundary decision (F35 open q, settled 2026-07-31): per-goal stop/abort
+Boundary decision (F03 open q, settled 2026-07-31): per-goal stop/abort
 authority (goal timeouts, STUCK_T_S, blacklist exhaustion, per-goal
 reselection) stays DOWN in dome_nav's explorer watchdog and never surfaces as
 an FSM event. The FSM owns only mission-level authority: start/stop/preempt

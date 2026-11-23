@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 # label_resolver.py — pure semantic-target store + label->pose resolution
 # Author: Pito Salas and Claude Code
+# Version: 1
+# Created: 2026-11-22
+# Updated: 2026-11-22
 # Open Source Under MIT license
 
-"""Pure label->pose resolution for the go-to-target behavior (F35 / TF35 T05).
+"""Pure label->pose resolution for the go-to-target behavior (F03 / TF03 T05).
 
 Holds the latest confirmed semantic targets (already converted from the typed
 `SemanticTargetArray` msg at the ROS boundary — this module stays framework-free)

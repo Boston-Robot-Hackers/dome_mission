@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
-# test_intent_parser.py — TF35 T04: pure /intent JSON -> mission Intent mapping
+# test_intent_parser.py — TF03 T04: pure /intent JSON -> mission Intent mapping
 # Author: Pito Salas and Claude Code
+# Version: 1
+# Created: 2026-11-22
+# Updated: 2026-11-22
 # Open Source Under MIT license
 
 import json

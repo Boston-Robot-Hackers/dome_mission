@@ -12,8 +12,11 @@ blocked, not broken (see **Blocked**).
 
 ### Next
 
-- **F08 (typed intent status)** is parked in `deferred/` — revive it, or leave
-  it parked. Its task file still names the pre-F35 `nav_manager_node`, so it
+- **F04 (check-targets patrol)** is written and parked, priority Low. It's
+  blocked on semantic-layer queries and a small-spin primitive, and isn't
+  approved for code.
+- **F02 (typed intent status)** is parked in `deferred/` — revive it, or leave
+  it parked. Its task file still names the pre-F03 `nav_manager_node`, so it
   needs re-scoping before it is picked up.
 
 ### Decisions pending

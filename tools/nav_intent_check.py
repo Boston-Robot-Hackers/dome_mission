@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 # nav_intent_check.py — diagnostic: test dome_mission go-to-target on live stack
 # Author: Pito Salas and Claude Code
+# Version: 1
+# Created: 2026-11-22
+# Updated: 2026-11-22
 # Open Source Under MIT license
 
-"""Live diagnostic for the dome_mission go-to-target behavior (F35 / TF35 T05).
+"""Live diagnostic for the dome_mission go-to-target behavior (F03 / TF03 T05).
 
 Reads the robot's map-frame pose from /amcl_pose, computes a target 50 cm to the
 robot's left, publishes it as a typed SemanticTargetArray on /semantic/targets
@@ -12,7 +15,7 @@ intent on /intent. dome_mission resolves the label to that pose and drives via
 Nav2 NavigateToPose.
 
 Terminal-status verification (done/failed) is not asserted here: dome_mission has
-no status topic yet (F08). Watch the robot / RViz, or the mission_node log, to
+no status topic yet (F02). Watch the robot / RViz, or the mission_node log, to
 confirm arrival.
 
 Usage: python3 tools/nav_intent_check.py
@@ -167,7 +170,7 @@ def main():
 
     print(
         "\nDONE: intent sent. Watch the robot / RViz / mission_node log for "
-        "arrival (no status topic yet — F08)."
+        "arrival (no status topic yet — F02)."
     )
     node.destroy_node()
     rclpy.shutdown()

@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
-# test_mission_node.py — TF35 T04: /intent payloads drive the node's FSM
+# test_mission_node.py — TF03 T04: /intent payloads drive the node's FSM
 # Author: Pito Salas and Claude Code
+# Version: 1
+# Created: 2026-11-22
+# Updated: 2026-11-22
 # Open Source Under MIT license
 
 import json

@@ -4,12 +4,13 @@ Semi-permanent project notes. Durable facts, not session narration.
 
 ## Origin
 
-Extracted from dome_nav per **F35** (mission-sequencing layer). The extraction
-is tracked in dome_nav's `04-tasks/notdone/TF35-mission-layer.md`, interleaved
+Extracted from dome_nav per **F03** (dome_nav's F35; mission-sequencing
+layer). The extraction is tracked in dome_nav's
+`04-tasks/notdone/TF35-mission-layer.md`, interleaved
 with dome_nav's F33 (semantic exploration) Phase A.
 
 Motivation: dome_nav had accreted mission/label logic (`nav_manager`,
-`/intent` handling in `explorer_manager_node`). F35 pulls that up into a neutral
+`/intent` handling in `explorer_manager_node`). F03 pulls that up into a neutral
 layer so dome_nav is primitives-only and never depends on `dome_semantic_msgs`.
 
 ## Layering
@@ -21,7 +22,7 @@ layer so dome_nav is primitives-only and never depends on `dome_semantic_msgs`.
             SemanticTargetArray (dome_semantic_msgs) ──► label→pose (dome_mission)
 ```
 
-## Key decisions (from TF35 T01/T03)
+## Key decisions (from TF03 T01/T03)
 
 - **Transport = ROS actions**, not topics/services. Long-running, cancellable,
   feedback/result; FSM→BT forward-compatible (`py_trees_ros` maps 1:1).
@@ -53,7 +54,7 @@ layer so dome_nav is primitives-only and never depends on `dome_semantic_msgs`.
 ## Task tracking
 
 - The extraction's authority was dome_nav's `TF35-mission-layer.md`, now
-  relocated here as `process/04-tasks/done/TF35-mission-layer.md`. This
+  relocated here as `process/04-tasks/done/TF03-mission-layer.md`. This
   package's own `process/03-features/` and `process/04-tasks/` cover
   dome_mission-native work.
 

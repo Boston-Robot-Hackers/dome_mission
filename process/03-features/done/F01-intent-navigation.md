@@ -1,4 +1,8 @@
-# F02 — Intent-Driven Navigation
+# F01 — Intent-Driven Navigation
+
+> **Renumbered 2026-11-22** to this repo's own sequence. The body below is the
+> dome_nav-era record and keeps dome_nav's numbering: dome_nav F02 → F01 here,
+> F08 → F02, F35 → F03. Other F-numbers in it are dome_nav's own features.
 
 **Date Created:** 2026-06-07
 

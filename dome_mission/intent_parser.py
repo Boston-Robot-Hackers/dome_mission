@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 # intent_parser.py — pure /intent JSON -> mission Intent mapping
 # Author: Pito Salas and Claude Code
+# Version: 1
+# Created: 2026-11-22
+# Updated: 2026-11-22
 # Open Source Under MIT license
 
-"""Pure `/intent` JSON -> mission Intent mapping (F35 / TF35 T04).
+"""Pure `/intent` JSON -> mission Intent mapping (F03 / TF03 T04).
 
 The `/intent` contract (std_msgs/String carrying a JSON object) is owned by
 dome_mission after T04. This module is ROS-free so the mapping is unit-testable

@@ -127,6 +127,6 @@ fails later, in the resolver, with a less specific message.
    confirmed target for label ''".
 3. **`None` loses the reason.** A small result type (or raising a
    `ValueError` with the cause) would let the node log *which* gate failed.
-4. **The JSON-in-String transport itself is the root issue.** Feature F08
+4. **The JSON-in-String transport itself is the root issue.** Feature F02
    (deferred) proposes typed `Intent` messages, which would make most of this
    module unnecessary.

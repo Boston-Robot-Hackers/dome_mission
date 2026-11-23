@@ -20,6 +20,7 @@
 
 # features
 * `FNN-<slug>.md` in `process/03-features/{notdone,done,deferred}/`; a mini-spec — scope/intent, not task detail.
+* **Numbering is per repo, consecutive from `01`.** The next `NN` is one past the highest feature number in this repo's `process/03-features/` (all three folders), with no gaps. Other repos' numbers don't matter, even for cross-package work. A feature imported from another repo is renumbered into this sequence; its file gets a banner mapping old → new numbers, and its historical body keeps the old ones. Issue numbers follow the same rule.
 * `Tasks File Created: yes` only once a matching `process/04-tasks/TFNN-*.md` exists. `template.md` shows the format.
 * `Date Created:` in the header, absolute ISO `YYYY-MM-DD`, set when the file is first written and never changed afterwards — not even when the feature moves between `notdone`/`done`/`deferred`.
 

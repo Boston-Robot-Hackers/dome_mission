@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
-# test_label_resolver.py — TF35 T05: pure label->pose resolution + nearest match
+# test_label_resolver.py — TF03 T05: pure label->pose resolution + nearest match
 # Author: Pito Salas and Claude Code
+# Version: 1
+# Created: 2026-11-22
+# Updated: 2026-11-22
 # Open Source Under MIT license
 
 import math

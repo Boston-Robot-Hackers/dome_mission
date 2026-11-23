@@ -18,7 +18,7 @@ and the things that move the robot (dome_nav's explorer, Nav2).
 
 ## Why it exists as its own package
 
-dome_mission was **extracted from dome_nav** (feature F35). dome_nav had grown
+dome_mission was **extracted from dome_nav** (feature F03). dome_nav had grown
 mission logic and semantic knowledge — label lookups, `/intent` handling — that
 didn't belong in a navigation package.
 
@@ -133,5 +133,5 @@ resolution.
   observations.
 - **`LOCATING` has no `/intent` name**, so it can't be entered from the live
   system yet.
-- **The `/intent` transport is untyped JSON.** Deferred feature F08 proposes
+- **The `/intent` transport is untyped JSON.** Deferred feature F02 proposes
   typed messages.

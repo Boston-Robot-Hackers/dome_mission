@@ -18,7 +18,7 @@ We are developing dome_mission, the mission-sequencing layer for the DOME robot.
 It owns `/intent` and drives a pure mission FSM that composes dome_nav
 primitives (`ExploreArea` action, in `dome_nav_msgs`) and Nav2 `NavigateToPose`.
 dome_mission holds all go-to-label / semantic knowledge (via `dome_semantic_msgs`)
-so dome_nav stays primitives-only (F35).
+so dome_nav stays primitives-only (F03).
 
 All process files live under `process/`: literate docs in
 `process/01-literate/`, project docs in `process/02-doc/`, features in
