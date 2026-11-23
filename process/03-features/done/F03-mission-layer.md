@@ -4,6 +4,16 @@
 > dome_nav-era record and keeps dome_nav's numbering: dome_nav F02 → F01 here,
 > F08 → F02, F35 → F03. Other F-numbers in it are dome_nav's own features.
 
+> **Partly superseded by F05 (2026-11-23).** Still stands: dome_nav is
+> primitives only, transport is ROS actions, drive-to-pose goes to Nav2
+> directly, and dome_mission holds label → pose via `/semantic/targets`.
+>
+> Changed: "dome_mission owns the `/intent` contract" was never fully true,
+> because dome_control's `behavior_manager_node` also handles a set of names.
+> F05 makes dome_mission the single brain, and F08 does the merge. The
+> **FSM-for-now** choice is replaced by plain sequential behaviors. See
+> `process/03-features/done/F05-redefine-dome-mission.md`.
+
 **Date Created:** 2026-07-31
 
 > Relocated from dome_nav → dome_mission (2026-07-31, TF35 T08) as this package's

@@ -17,18 +17,20 @@ targets, takes a look at each one, and publishes a report saying which are still
 where the map says and which are missing.
 
 This is dome_mission's first true **multi-step behavior**: a sequence of
-primitives (drive, spin, query) with a result at the end. It is the
+actions (drive, spin) and checks against the local semantic map, with a result
+at the end. It is written as plain sequential code (F05). It is the
 *check target locations* purpose of patrol; map-improvement and intruder
 patrols are separate, later features.
 
 ## Flow
 
 1. A request arrives on `/intent` carrying a **filter**.
-2. dome_mission asks the semantic layer for the matching targets and a
-   **viewpoint** for each.
+2. dome_mission filters its local copy of `/semantic/targets` and computes a
+   **viewpoint** for each match (a stand-off pose facing the target).
 3. dome_mission orders the viewpoints into a route.
-4. For each stop: drive to the viewpoint (Nav2), do a **small spin**, then ask
-   the semantic layer whether the target was **seen again** since arriving.
+4. For each stop: drive to the viewpoint (Nav2 `NavigateToPose`), do a
+   **small spin** (Nav2 `Spin`), then check whether the target's `last_seen`
+   is later than the arrival time, i.e. it was **seen again**.
 5. A stop whose viewpoint can't be reached is **skipped**.
 6. After the last stop, publish the **report on a topic**.
 
@@ -44,10 +46,11 @@ A sighting somewhere else is *not* a verdict. The semantic layer records it as a
 
 ## Key decisions
 
-- **dome_mission judges nothing perceptual.** The semantic layer lists targets,
-  proposes viewpoints, and says whether a target was re-seen. dome_mission only
-  sequences, drives, and reports. This keeps the feature intact if open-ended
-  discovery replaces today's tracker.
+- **dome_mission judges nothing perceptual.** dome_semantic decides what was
+  observed and stamps `last_seen`. dome_mission only compares timestamps,
+  sequences, drives, and reports.
+- **No new semantic-layer interfaces** (F05). Filtering, viewpoints and the
+  re-seen check all use the published `SemanticTargetArray`.
 - **Rooms are not required.** The feature works on the flat target list; a
   room filter can be added once the hierarchical semantic map exists.
 - **On request only.** No scheduling.
@@ -61,15 +64,14 @@ A sighting somewhere else is *not* a verdict. The semantic layer records it as a
 
 ## Dependencies
 
-- **Semantic layer** (dome_semantic or its successor) must provide: list
-  targets by filter, a viewpoint per target, and a re-seen check. None exist
-  today.
-- **Small-spin primitive** as an action. The `spin_survey` code leaving
-  dome_control is a candidate source; its home is undecided.
-- **Nav2** with a live robot pose — blocked today by I02 (no `amcl` in the
-  explore stack).
-- The **dome_mission redefinition** (multi-step behaviors over primitives,
-  superseding parts of F03) should be written down first.
+- **Nav2** with a live robot pose. This is blocked today by I02 (no `amcl` in
+  the explore stack).
+- **Nav2 `Spin`**: already enabled in dome_nav's Nav2 params; no new
+  primitive is needed.
+- **F07** first: its `approach_pose` function is the viewpoint.
+- **F05** (the definition) first. F08 (the brain merge) is not required:
+  `navigation_cancel` cancels a patrol today, and the universal `stop` does
+  so once F08 lands.
 
 ## Open questions
 
@@ -77,8 +79,10 @@ A sighting somewhere else is *not* a verdict. The semantic layer records it as a
 - **Report format**: a typed message (per target: id, label, verdict,
   last-seen) — and which interface package hosts it?
 - **Intent name**: e.g. `patrol_check_targets` with a `filter` slot.
-- **FSM or behavior tree**: a stop-by-stop loop is where the FSM starts to
-  strain; `py_trees_ros` is the noted candidate.
+- **Viewpoint geometry**: the stand-off distance, and which side of the
+  target to stand on.
+- **Settle time**: how long after the spin to wait before checking
+  `last_seen`.
 
 ## How to Demo
 

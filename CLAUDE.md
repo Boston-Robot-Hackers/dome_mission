@@ -14,11 +14,14 @@ Before writing or reviewing code, read and follow `.claude/style_guide.md`
 (coding standards, style rules, and review checklist) — apply it yourself
 before committing; do not substitute a generic/plugin review for it.
 
-We are developing dome_mission, the mission-sequencing layer for the DOME robot.
-It owns `/intent` and drives a pure mission FSM that composes dome_nav
-primitives (`ExploreArea` action, in `dome_nav_msgs`) and Nav2 `NavigateToPose`.
-dome_mission holds all go-to-label / semantic knowledge (via `dome_semantic_msgs`)
-so dome_nav stays primitives-only (F03).
+We are developing dome_mission, **the DOME robot's brain** (F05). It is the
+only node meant to consume `/intent`, and it alone owns what the robot is doing
+now. It runs behaviors by calling motion actions in sequence: dome_nav's
+`ExploreArea` (in `dome_nav_msgs`), and Nav2's `NavigateToPose`, `Spin` and
+`DriveOnHeading`. It keeps a local copy of the semantic map from
+`/semantic/targets` (`dome_semantic_msgs`) for label → pose, so dome_nav stays
+primitives-only. It publishes no `/cmd_vel` and builds no world model. Package
+roles and the "where does new code go" test are in `process/02-doc/spec.md`.
 
 All process files live under `process/`: literate docs in
 `process/01-literate/`, project docs in `process/02-doc/`, features in
@@ -27,6 +30,13 @@ All process files live under `process/`: literate docs in
 
 ## Sibling packages
 
+- **dome_control**: the operator surface (CLI, status display, process
+  management). Its `behavior_manager_node` still subscribes to `/intent` for
+  `stop`, the turns and the queries, until F08 merges it here.
+- **dome_semantic**: the world model. It publishes `/semantic/targets` and
+  serves `/describe_scene`.
+- **Nav2**: `NavigateToPose`, and the behavior server's `Spin` and
+  `DriveOnHeading`.
 - **dome_nav** — navigation/SLAM primitives (explorer, slam_manager). Exposes
   the `ExploreArea` action; no mission or semantic knowledge.
 - **dome_nav_msgs** — `ExploreArea.action` (ament_cmake interface package).

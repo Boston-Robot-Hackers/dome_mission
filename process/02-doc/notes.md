@@ -13,26 +13,49 @@ Motivation: dome_nav had accreted mission/label logic (`nav_manager`,
 `/intent` handling in `explorer_manager_node`). F03 pulls that up into a neutral
 layer so dome_nav is primitives-only and never depends on `dome_semantic_msgs`.
 
+## Role (F05)
+
+dome_mission is **the brain**: the only node meant to consume `/intent`, and
+the sole owner of what the robot is doing now. dome_control is the operator
+surface, dome_semantic is the world model, and Nav2/dome_nav are the motion
+primitives. The full role table is in `process/02-doc/spec.md`.
+
+Until F08 lands, `/intent` is still split by name (dome_control F19):
+dome_control's `behavior_manager_node` handles `stop`, turns, `get_status`,
+`describe_scene` and `count_objects`. Its `stop` is a motor halt that doesn't
+cancel dome_mission's goals.
+
 ## Layering
 
 ```
-/intent ──► dome_mission (FSM) ──► ExploreArea action ──► dome_nav (explorer)
-                    │
-                    └──► NavigateToPose action ──► Nav2   (direct, no dome_nav hop)
-            SemanticTargetArray (dome_semantic_msgs) ──► label→pose (dome_mission)
+/intent ──► dome_mission ──► ExploreArea ──────────► dome_nav (explorer)
+                 │
+                 ├──► NavigateToPose ──────────────► Nav2   (direct, no dome_nav hop)
+                 ├──► Spin / DriveOnHeading (F08) ─► Nav2 behavior server
+                 └──► /mission/state, /announcement (F08)
+/semantic/targets (SemanticTargetArray) ──► local copy ──► label → pose, filters
 ```
 
-## Key decisions (from TF03 T01/T03)
+## Key decisions
 
-- **Transport = ROS actions**, not topics/services. Long-running, cancellable,
-  feedback/result; FSM→BT forward-compatible (`py_trees_ros` maps 1:1).
-- **drive-to-pose talks to Nav2 directly** — dome_mission holds the semantic
+- **One brain** (F05). The operator surface publishes intents and never
+  handles them.
+- **Subscribe to the semantic map; don't query it** (F05). The array is small.
+  `SemanticTarget` carries `last_seen`, so "was it seen again?" checks are
+  local. Add a service only when the array can't answer.
+- **Turns and small spins use Nav2's behavior server** (F05). `spin` and
+  `drive_on_heading` are already in every dome_nav Nav2 params file, so no new
+  primitive is needed.
+- **Behaviors are plain sequential code** (F05), not new FSM states per
+  behavior and not a BT framework. *Hazard*: rclpy needs a worker thread per
+  behavior, or async callbacks on a multi-threaded executor.
+- **Transport = ROS actions** (TF03 T01). They are long-running, cancellable,
+  and give feedback and a result.
+- **drive-to-pose talks to Nav2 directly.** dome_mission holds the semantic
   map, so routing the pose back through dome_nav would be a pointless hop.
 - **Boundary**: per-goal abort (timeouts, stuck, blacklist) stays in dome_nav's
-  explorer watchdog; the FSM owns mission-level start/stop/preempt + terminal
-  `ExploreArea` outcome only.
-- **FSM, not BT** for Phase A/C. BT is a Phase-B candidate (`py_trees_ros`,
-  Python) — never Nav2's internal C++ BT.
+  explorer watchdog. dome_mission owns only mission-level start/stop/preempt
+  and the terminal `ExploreArea` outcome.
 
 ## Package relationships
 
@@ -50,6 +73,8 @@ layer so dome_nav is primitives-only and never depends on `dome_semantic_msgs`.
   explore, Nav2 `NavigateToPose` for drive-to-target.
 - `mission_node` publishes FSM state on `/mission/state` (transient-local) for
   `dome_control`.
+- The FSM (`mission_fsm.py`) covers explore and go-to only. Later behaviors are
+  sequential code (see **Key decisions**).
 
 ## Task tracking
 

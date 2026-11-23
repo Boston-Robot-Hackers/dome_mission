@@ -2,6 +2,15 @@
 
 Completed items moved out of `current.md`'s `## Open` section, newest first.
 
+- **F05 closed: dome_mission is the single brain (2026-11-23)**: docs only.
+  Spec, CLAUDE.md, notes and `mission.md` were rewritten to the package-role
+  definition, and F03 got a partly-superseded banner. A simplicity review cut
+  the 2026-11-22 draft's extras: keep the `/semantic/targets` subscription (no
+  query service), use Nav2 `Spin`/`DriveOnHeading` (no new primitive), and use
+  plain sequential behaviors (no BT). F04 was re-scoped to need no
+  semantic-layer interfaces. F07 was rewritten as go-to approach pose. F08
+  (merge `behavior_manager`) was added, parked.
+
 - **`.claude/` synced to the j3 kit (2026-11-22)**: style guide v4.1 → v4.4,
   new process rules, commands, hooks and templates. Process folders moved
   under `process/`, `.githooks/pre-commit` header stamper installed,
