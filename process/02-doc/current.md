@@ -14,6 +14,10 @@ Two features are ready to pick up, neither approved for code yet:
 - **F08 (merge the brain)**: moves `behavior_manager`'s intents in and fixes
   the uncoordinated `stop`.
 
+Also written, not started: a plan to **merge all dome_* repos into one** via
+`git subtree`, covering procedure, target layout and numbering. See
+`repo-consolidation.md`.
+
 ### Next
 
 - **F08 (merge the brain)**: Medium, parked. Moves `behavior_manager_node`'s
@@ -31,6 +35,8 @@ Two features are ready to pick up, neither approved for code yet:
 
 - **`spin_survey`**: retire it, or re-express it as `Nav2 Spin` goals.
   *Unverified* whether pause-and-capture fits.
+- **Consolidate the dome_* repos into one?** Plan liked, not started. The
+  procedure, trial run and caveats are in `process/02-doc/repo-consolidation.md`.
 - **I03**: collapse `intent_parser.py`'s four-guard LBYL validation into one
   EAFP `try`/`except`? Two sub-questions are open: broad-except masking risk,
   and where the specific failure reason gets logged.
